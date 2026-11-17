@@ -1,0 +1,569 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>매장 매출 보고서 자동 취합</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<style>
+  :root{--bg:#f5f6f8;--card:#fff;--line:#e4e7ec;--text:#1d2330;--sub:#667085;--accent:#2f5d50;--accent2:#e8f0ed;--warn:#b54708;--warnbg:#fff6ed;--err:#b42318;--errbg:#fef3f2;--ok:#027a48;--okbg:#ecfdf3}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:Pretendard,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-size:15px;line-height:1.5}
+  .wrap{max-width:1080px;margin:0 auto;padding:32px 20px 80px}
+  h1{font-size:24px;margin:0 0 4px}
+  .lead{color:var(--sub);margin:0 0 28px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:18px}
+  .step{display:flex;align-items:center;gap:10px;margin:0 0 14px;font-size:17px;font-weight:700}
+  .step b{display:inline-flex;width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;font-size:14px;align-items:center;justify-content:center}
+  .drops{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  @media(max-width:800px){.drops{grid-template-columns:1fr}}
+  .drop{border:1.5px dashed #cbd2dc;border-radius:12px;padding:16px;cursor:pointer;transition:.15s;background:#fafbfc;min-height:118px;display:flex;flex-direction:column;gap:4px}
+  .drop:hover,.drop.over{border-color:var(--accent);background:var(--accent2)}
+  .drop.done{border-style:solid;border-color:var(--accent);background:var(--accent2)}
+  .drop .t{font-weight:700}
+  .drop .d{color:var(--sub);font-size:13px}
+  .drop .f{margin-top:auto;font-size:13px;color:var(--accent);font-weight:600;word-break:break-all}
+  .drop input{display:none}
+  details{margin-top:14px}
+  summary{cursor:pointer;color:var(--sub);font-size:14px}
+  .opts{display:grid;grid-template-columns:repeat(2,1fr);gap:14px 20px}
+  @media(max-width:800px){.opts{grid-template-columns:1fr}}
+  label.o{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:600}
+  label.o small{font-weight:400;color:var(--sub)}
+  select,input[type=text]{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;width:100%}
+  textarea{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;width:100%;resize:vertical}
+  .chk{display:flex;gap:8px;align-items:flex-start;font-size:14px}
+  .chk small{display:block;color:var(--sub)}
+  .msg{padding:10px 14px;border-radius:10px;font-size:14px;margin-top:12px}
+  .msg.warn{background:var(--warnbg);color:var(--warn)}
+  .msg.err{background:var(--errbg);color:var(--err)}
+  .msg.ok{background:var(--okbg);color:var(--ok)}
+  .tblwrap{overflow:auto;max-height:620px;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:14px}
+  th,td{padding:7px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+  th{background:#f9fafb;position:sticky;top:0;z-index:1;text-align:left;font-weight:600;color:var(--sub)}
+  td.n input{text-align:right;width:130px}
+  td select{width:190px}
+  .badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:12px;font-weight:600}
+  .b-ok{background:var(--okbg);color:var(--ok)} .b-warn{background:var(--warnbg);color:var(--warn)} .b-err{background:var(--errbg);color:var(--err)}
+  .sum{display:flex;gap:24px;flex-wrap:wrap;margin:14px 0 4px;font-size:14px;color:var(--sub)}
+  .sum strong{color:var(--text);font-size:16px}
+  .btn{font:inherit;font-weight:700;border:0;border-radius:10px;padding:13px 22px;background:var(--accent);color:#fff;cursor:pointer;font-size:16px}
+  .btn:disabled{background:#c5ccd6;cursor:not-allowed}
+  .btn.ghost{background:#fff;color:var(--sub);border:1px solid var(--line);font-weight:500;font-size:13px;padding:7px 12px}
+  .extra{font-size:13px;color:var(--sub);margin-top:10px}
+  .hidden{display:none}
+  .foot{color:var(--sub);font-size:12px;text-align:center;margin-top:30px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>매장 매출 보고서 자동 취합</h1>
+  <p class="lead">파일 3개를 올리면 홀매출(POS)과 배달매출이 보고서 양식에 자동으로 채워져요. 모든 처리는 이 PC 브라우저 안에서만 이뤄지고, 파일이 외부로 전송되지 않아요.</p>
+
+  <div class="card">
+    <div class="step"><b>1</b>파일 올리기</div>
+    <div class="drops">
+      <label class="drop" id="d-tpl"><span class="t">① 보고서 양식</span><span class="d">지난달 보고서 엑셀(.xlsx) 그대로</span><span class="f"></span><input type="file" accept=".xlsx" data-k="tpl"></label>
+      <label class="drop" id="d-pos"><span class="t">② 홀매출 (POS)</span><span class="d">POS에서 받은 매장별 매출 (.xls / .xlsx / .csv)</span><span class="f"></span><input type="file" accept=".xls,.xlsx,.csv,.txt" data-k="pos"></label>
+      <label class="drop" id="d-dlv"><span class="t">③ 배달매출</span><span class="d">매장별매출_일별_채널별 시트가 있는 엑셀 (.xlsx)</span><span class="f"></span><input type="file" accept=".xlsx,.xls" data-k="dlv"></label>
+    </div>
+    <details>
+      <summary>(선택) 전년 동기간 파일도 있으면 함께 올리기 → '전년 동기간 매출' 칸까지 채워요</summary>
+      <div class="drops" style="margin-top:12px;grid-template-columns:repeat(2,1fr)">
+        <label class="drop" id="d-posPrev"><span class="t">전년 홀매출 (POS)</span><span class="d">작년 같은 기간 POS 파일</span><span class="f"></span><input type="file" accept=".xls,.xlsx,.csv,.txt" data-k="posPrev"></label>
+        <label class="drop" id="d-dlvPrev"><span class="t">전년 배달매출</span><span class="d">작년 같은 기간 배달 파일</span><span class="f"></span><input type="file" accept=".xlsx,.xls" data-k="dlvPrev"></label>
+      </div>
+    </details>
+    <div id="loadMsg"></div>
+  </div>
+
+  <div class="card">
+    <div class="step"><b>2</b>설정 확인</div>
+    <div class="opts">
+      <label class="o">보고 기간 표시 (헤더 문구)
+        <textarea id="periodLabel" rows="2" placeholder="예: 10월&#10;261001~261031"></textarea>
+        <small>배달 파일의 기간에서 자동으로 만들어요. 필요하면 직접 고쳐도 돼요.</small>
+      </label>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <label class="o">홀매출 기준
+          <select id="hallBasis">
+            <option value="mp">매장판매 + 포장판매 (POS로 들어온 배달 제외) · 추천</option>
+            <option value="net">실판매 금액 전체 (POS 배달 포함)</option>
+          </select>
+          <small>배달앱 주문이 POS에도 '배달'로 잡히는 매장(구로디지털·청라·센트럴 등)은 '실판매 금액'을 쓰면 배달이 두 번 더해져요.</small>
+        </label>
+        <label class="o">배달매출 기준
+          <select id="dlvBasis">
+            <option value="app">배달앱 합계 (배민·배민1·쿠팡이츠·요기요·땡겨요) · 추천</option>
+            <option value="bc">배민 + 배민1 + 쿠팡이츠만</option>
+          </select>
+        </label>
+      </div>
+      <label class="chk"><input type="checkbox" id="fixFormula" checked><span>달성률 칸 수식 복구<small>숫자로 덮어써진 '매출달성율' 칸을 =실적/목표 수식으로 되돌려서, 새 매출이 들어가면 달성률도 같이 바뀌게 해요.</small></span></label>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="step"><b>3</b>매장별 매칭 확인 <span style="font-weight:400;font-size:13px;color:var(--sub)">· 매칭이 틀렸으면 고르면 되고, 다른 POS를 쓰는 매장은 금액을 직접 입력해도 돼요 (매칭은 다음 달에도 기억해요)</span></div>
+    <div id="tblArea"><div class="extra">파일 ①②③을 올리면 여기에 매장 목록이 나와요.</div></div>
+  </div>
+
+  <div class="card">
+    <div class="step"><b>4</b>보고서 만들기</div>
+    <button class="btn" id="genBtn" disabled>엑셀 보고서 다운로드</button>
+    <div id="genMsg"></div>
+  </div>
+  <div class="foot">원본 양식의 서식·색상·조건부서식·필터는 그대로 두고, 숫자 칸만 바꿔요.</div>
+</div>
+
+<script>
+'use strict';
+const S = { buf:{}, pos:null, dlv:null, posPrev:null, dlvPrev:null, tpl:null, rows:[] };
+const LS_MAP = 'salesReport.map.v1', LS_OPT = 'salesReport.opt.v1';
+const $ = id => document.getElementById(id);
+const fmt = n => (n==null||n==='') ? '' : Math.round(n).toLocaleString('ko-KR');
+const num = v => { if (v==null || v==='') return 0; if (typeof v==='number') return v; const n = Number(String(v).replace(/["',\s원]/g,'')); return isFinite(n) ? n : 0; };
+const key = s => String(s ?? '').replace(/\s+/g,'');
+const norm = s => String(s||'').replace(/\(.*?\)/g,'').replace(/구도로통닭/g,'').replace(/\s+/g,'').replace(/점$/,'');
+const ALIAS = { '남광장':['남동탄','동탄남광장'] };
+const loadMap = () => { try { return JSON.parse(localStorage.getItem(LS_MAP)||'{}'); } catch(e){ return {}; } };
+const saveMap = m => localStorage.setItem(LS_MAP, JSON.stringify(m));
+
+function msg(el, type, html){ $(el).innerHTML = html ? `<div class="msg ${type}">${html}</div>` : ''; }
+
+/* ---------- 이름 매칭 ---------- */
+function bestMatch(name, list){
+  const rn = norm(name); const cands = [rn, ...(ALIAS[rn]||[])];
+  let best=null, bs=0, bd=1e9;
+  for (const s of list){
+    const sn = norm(s); let sc=0;
+    for (const c of cands){
+      if (!c || !sn) continue;
+      const m = Math.min(c.length, sn.length);
+      let v = 0;
+      if (sn===c) v=100;
+      else if (m>=2 && (sn.endsWith(c)||c.endsWith(sn))) v=80;
+      else if (m>=2 && (sn.includes(c)||c.includes(sn))) v=60;
+      sc = Math.max(sc, v);
+    }
+    const d = Math.abs(sn.length-rn.length);
+    if (sc>bs || (sc===bs && sc>0 && d<bd)){ best=s; bs=sc; bd=d; }
+  }
+  return bs>=60 ? best : null;
+}
+
+/* ---------- 파일 읽기 ---------- */
+function splitLine(line, delim){
+  const out=[]; let cur='', q=false;
+  for (let i=0;i<line.length;i++){
+    const ch=line[i];
+    if (q){ if (ch==='"'){ if (line[i+1]==='"'){cur+='"';i++;} else q=false; } else cur+=ch; }
+    else if (ch==='"') q=true;
+    else if (ch===delim){ out.push(cur); cur=''; }
+    else cur+=ch;
+  }
+  out.push(cur); return out;
+}
+function sheetAoa(wb, pred){
+  for (const n of wb.SheetNames){
+    const aoa = XLSX.utils.sheet_to_json(wb.Sheets[n], {header:1, raw:true, defval:null});
+    for (let i=0;i<Math.min(aoa.length,30);i++){ if (pred((aoa[i]||[]).map(key))) return {aoa, hdr:i, name:n}; }
+  }
+  return null;
+}
+async function readAoa(file, pred){
+  const buf = new Uint8Array(await file.arrayBuffer());
+  const zipOrOle = (buf[0]===0x50&&buf[1]===0x4B) || (buf[0]===0xD0&&buf[1]===0xCF);
+  if (zipOrOle) return sheetAoa(XLSX.read(buf,{type:'array'}), pred);
+  // POS에서 .xls로 내려주지만 실제로는 텍스트(탭 구분, EUC-KR)인 경우
+  let txt = new TextDecoder('utf-8').decode(buf);
+  if (txt.includes('\uFFFD')) txt = new TextDecoder('euc-kr').decode(buf);
+  if (/<table/i.test(txt)) return sheetAoa(XLSX.read(txt,{type:'string'}), pred);
+  const lines = txt.split(/\r?\n/);
+  const delim = lines[0].includes('\t') ? '\t' : ',';
+  const aoa = lines.map(l=>splitLine(l, delim));
+  for (let i=0;i<Math.min(aoa.length,30);i++){ if (pred(aoa[i].map(key))) return {aoa, hdr:i}; }
+  return null;
+}
+function ymd(d){ return d ? `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}` : ''; }
+function toDate(v){
+  if (v==null||v==='') return null;
+  if (v instanceof Date) return v;
+  if (typeof v==='number') return new Date(Math.round((v-25569)*86400000));
+  const m = String(v).match(/(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})/);
+  return m ? new Date(+m[1], +m[2]-1, +m[3]) : null;
+}
+
+async function parsePOS(file){
+  const t = await readAoa(file, r => r.includes('매장명') && (r.includes('실판매금액')||r.includes('매장판매금액')));
+  if (!t) throw new Error('POS 파일에서 "매장명 / 실판매 금액" 머리글을 찾지 못했어요.');
+  const h = t.aoa[t.hdr].map(key); const col = n => h.indexOf(n);
+  const c = { name:col('매장명'), net:col('실판매금액'), store:col('매장판매금액'), take:col('포장판매금액'), dlv:col('배달판매금액'), first:col('첫주문시간'), last:col('최종주문시간') };
+  const stores = new Map(); let minD=null, maxD=null;
+  for (let i=t.hdr+1;i<t.aoa.length;i++){
+    const r = t.aoa[i]; if (!r) continue;
+    const name = String(r[c.name]??'').trim();
+    if (!name || /^(합계|평균|소계)$/.test(name) || /row\(s\)/.test(name)) continue;
+    const net = num(r[c.net]);
+    const mp = c.store>=0 ? num(r[c.store]) + (c.take>=0 ? num(r[c.take]) : 0) : net;
+    const prev = stores.get(name) || {net:0, mp:0, posDlv:0};
+    stores.set(name, {net:prev.net+net, mp:prev.mp+mp, posDlv:prev.posDlv+(c.dlv>=0?num(r[c.dlv]):0)});
+    const f = c.first>=0 ? toDate(r[c.first]) : null; if (f && (!minD||f<minD)) minD=f;
+  }
+  return { stores, period: minD ? {start:minD} : null, hasMP: c.store>=0 };
+}
+
+async function parseDLV(file){
+  const t = await readAoa(file, r => r.includes('매장명') && r.includes('채널') && r.includes('매출'));
+  if (!t) throw new Error('배달 파일에서 "매장명 / 채널 / 매출" 머리글을 찾지 못했어요. (매장별매출_일별_채널별 시트가 필요해요)');
+  const h = t.aoa[t.hdr].map(key); const col = n => h.indexOf(n);
+  const c = { date:col('날짜'), name:col('매장명'), ch:col('채널'), amt:col('매출') };
+  let period = null;
+  for (let i=0;i<t.hdr;i++){
+    const s = (t.aoa[i]||[]).join(' ');
+    const m = s.match(/시작일\s*([\d.\-\/]+)\s*~\s*종료일\s*([\d.\-\/]+)/);
+    if (m){ period = {start:toDate(m[1]), end:toDate(m[2])}; break; }
+  }
+  const stores = new Map(); let minD=null, maxD=null;
+  for (let i=t.hdr+1;i<t.aoa.length;i++){
+    const r = t.aoa[i]; if (!r) continue;
+    const name = String(r[c.name]??'').trim(); if (!name) continue;
+    const ch = String(r[c.ch]??'').replace(/^ㄴ\s*/,'').trim();
+    const v = num(r[c.amt]);
+    const s = stores.get(name) || {app:0, appParts:0, bc:0, hall:0};
+    if (ch==='배달앱(합계)') s.app += v;
+    else if (['배달의민족','배민1','쿠팡이츠','요기요','땡겨요'].includes(ch)) s.appParts += v;
+    if (['배달의민족','배민1','쿠팡이츠'].includes(ch)) s.bc += v;
+    if (ch==='홀주문(합계)') s.hall += v;
+    stores.set(name, s);
+    if (c.date>=0){ const d = toDate(r[c.date]); if (d){ if(!minD||d<minD)minD=d; if(!maxD||d>maxD)maxD=d; } }
+  }
+  for (const s of stores.values()) if (!s.app && s.appParts) s.app = s.appParts;
+  if (!period && minD) period = {start:minD, end:maxD};
+  return { stores, period };
+}
+
+/* ---------- 보고서 양식 (xlsx XML 직접 수정: 서식 100% 보존) ---------- */
+const NS = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
+const colNum = s => { let n=0; for (const ch of s) n = n*26 + (ch.charCodeAt(0)-64); return n; };
+const colStr = n => { let s=''; while(n>0){ const m=(n-1)%26; s=String.fromCharCode(65+m)+s; n=Math.floor((n-1)/26); } return s; };
+const splitRef = ref => { const m = ref.match(/^([A-Z]+)(\d+)$/); return [m[1], +m[2]]; };
+const kids = (el, tag) => Array.from(el.childNodes).filter(n => n.nodeType===1 && n.localName===tag);
+
+async function parseTemplate(buf){
+  const zip = await JSZip.loadAsync(buf, {createFolders:false});
+  const P = new DOMParser();
+  const wbXml = await zip.file('xl/workbook.xml').async('string');
+  const relXml = await zip.file('xl/_rels/workbook.xml.rels').async('string');
+  const wbDoc = P.parseFromString(wbXml,'application/xml'), relDoc = P.parseFromString(relXml,'application/xml');
+  const firstSheet = wbDoc.getElementsByTagNameNS(NS,'sheet')[0];
+  const rid = firstSheet.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships','id');
+  let target = Array.from(relDoc.getElementsByTagName('Relationship')).find(r=>r.getAttribute('Id')===rid).getAttribute('Target');
+  const sheetPath = target.startsWith('/') ? target.slice(1) : 'xl/' + target.replace(/^\.\//,'');
+  const doc = P.parseFromString(await zip.file(sheetPath).async('string'),'application/xml');
+  let ss = [];
+  if (zip.file('xl/sharedStrings.xml')){
+    const sd = P.parseFromString(await zip.file('xl/sharedStrings.xml').async('string'),'application/xml');
+    ss = Array.from(sd.getElementsByTagNameNS(NS,'si')).map(si => {
+      let t=''; for (const ch of si.childNodes){ if (ch.localName==='t') t+=ch.textContent; else if (ch.localName==='r') kids(ch,'t').forEach(x=>t+=x.textContent); }
+      return t;
+    });
+  }
+  const sheetData = doc.getElementsByTagNameNS(NS,'sheetData')[0];
+  const rowEls = new Map(), cells = new Map();
+  for (const row of kids(sheetData,'row')){
+    rowEls.set(+row.getAttribute('r'), row);
+    for (const c of kids(row,'c')) cells.set(c.getAttribute('r'), c);
+  }
+  const T = { zip, sheetPath, doc, ss, sheetData, rowEls, cells };
+  // 머리글 위치 찾기
+  let hdrRow=null, nameCol=null;
+  for (const [ref,c] of cells){ if (key(cellText(T,c))==='매장명'){ const [cl,r]=splitRef(ref); hdrRow=r; nameCol=colNum(cl); break; } }
+  if (!hdrRow) throw new Error('보고서 양식에서 "매장명" 머리글을 찾지 못했어요.');
+  let hallCol=null, dlvCol=null;
+  for (const [ref,c] of cells){
+    const [cl,r] = splitRef(ref); if (r!==hdrRow-1) continue;
+    const t = key(cellText(T,c));
+    if (t==='홀') hallCol = colNum(cl);
+    else if (t.startsWith('배달')) dlvCol = colNum(cl);
+  }
+  if (!hallCol || !dlvCol) throw new Error('보고서 양식에서 "홀" / "배달" 묶음 머리글을 찾지 못했어요.');
+  const rows=[];
+  for (let r=hdrRow+1; ; r++){
+    const c = cells.get(colStr(nameCol)+r); const name = c ? cellText(T,c).trim() : '';
+    if (!name) break; rows.push({r, name});
+  }
+  Object.assign(T, {hdrRow, nameCol, hallCol, dlvCol, rows});
+  return T;
+}
+function cellText(T, c){
+  const t = c.getAttribute('t'); const v = kids(c,'v')[0];
+  if (t==='s') return v ? (T.ss[+v.textContent]||'') : '';
+  if (t==='inlineStr'){ const is = kids(c,'is')[0]; return is ? is.textContent : ''; }
+  return v ? v.textContent : '';
+}
+function getCell(T, ref){
+  if (T.cells.has(ref)) return T.cells.get(ref);
+  const [cl, r] = splitRef(ref);
+  let row = T.rowEls.get(r);
+  if (!row){
+    row = T.doc.createElementNS(NS,'row'); row.setAttribute('r', r);
+    const after = Array.from(T.rowEls.keys()).filter(k=>k>r).sort((a,b)=>a-b)[0];
+    T.sheetData.insertBefore(row, after ? T.rowEls.get(after) : null); T.rowEls.set(r,row);
+  }
+  const c = T.doc.createElementNS(NS,'c'); c.setAttribute('r', ref);
+  const nx = kids(row,'c').find(x => colNum(splitRef(x.getAttribute('r'))[0]) > colNum(cl));
+  row.insertBefore(c, nx||null); T.cells.set(ref,c); return c;
+}
+function clearCell(c){ for (const n of Array.from(c.childNodes)) c.removeChild(n); c.removeAttribute('t'); }
+function setNum(T, ref, n){
+  const c = getCell(T, ref); clearCell(c);
+  if (n!=null && n!=='' && isFinite(n)){ const v = T.doc.createElementNS(NS,'v'); v.textContent = String(n); c.appendChild(v); }
+}
+function setStr(T, ref, s){
+  const c = getCell(T, ref); clearCell(c); c.setAttribute('t','inlineStr');
+  const is = T.doc.createElementNS(NS,'is'), t = T.doc.createElementNS(NS,'t');
+  t.setAttributeNS('http://www.w3.org/XML/1998/namespace','xml:space','preserve'); t.textContent = s; is.appendChild(t); c.appendChild(is);
+}
+function setFormula(T, ref, f){
+  const c = getCell(T, ref); clearCell(c);
+  const fe = T.doc.createElementNS(NS,'f'); fe.textContent = f; c.appendChild(fe);
+}
+
+/* 간단한 수식 계산기: 엑셀 '보호된 보기'에서도 올바른 숫자가 보이도록 캐시값 갱신 */
+function recalc(T){
+  const masters = {};
+  for (const [ref,c] of T.cells){
+    const f = kids(c,'f')[0];
+    if (f && f.getAttribute('t')==='shared' && f.getAttribute('ref') && f.textContent){ const [cl,r]=splitRef(ref); masters[f.getAttribute('si')] = {text:f.textContent, col:colNum(cl), row:r}; }
+  }
+  const shift = (txt, dr, dc) => txt.replace(/(\$?)([A-Z]{1,3})(\$?)(\d+)/g, (m,a,cl,b,rw) => a + (a?cl:colStr(colNum(cl)+dc)) + b + (b?rw:(+rw+dr)));
+  const formulaOf = (ref, c) => {
+    const f = kids(c,'f')[0]; if (!f) return null;
+    if (f.getAttribute('t')==='shared' && !(f.getAttribute('ref') && f.textContent)){
+      const m = masters[f.getAttribute('si')]; if (!m) return undefined;
+      const [cl,r] = splitRef(ref); return shift(m.text, r-m.row, colNum(cl)-m.col);
+    }
+    if (f.getAttribute('t')==='array') return undefined;
+    return f.textContent;
+  };
+  const memo = new Map(), busy = new Set();
+  const ERR = /^#(REF!|DIV\/0!|VALUE!|N\/A|NAME\?|NUM!|NULL!)$/;
+  function val(ref){
+    ref = ref.replace(/\$/g,'');
+    if (memo.has(ref)) return memo.get(ref);
+    const c = T.cells.get(ref); if (!c) return null;
+    const f = formulaOf(ref, c);
+    let out;
+    if (f===null){ const t=c.getAttribute('t'); const tx = cellText(T,c);
+      if (t==='s'||t==='inlineStr'||t==='str') out = tx; else if (t==='e') out = {err:tx}; else out = tx==='' ? null : Number(tx); }
+    else if (f===undefined) out = undefined;
+    else { if (busy.has(ref)) return {err:'#REF!'}; busy.add(ref); try { out = evalF(f); } catch(e){ out = undefined; } busy.delete(ref); }
+    memo.set(ref, out); return out;
+  }
+  function evalF(src){
+    const re = /\s*(?:(#REF!|#DIV\/0!|#VALUE!|#N\/A|#NAME\?)|(\$?[A-Z]{1,3}\$?\d+)|(\d+(?:\.\d+)?(?:[Ee][+-]?\d+)?)|([-+*/()]))/y;
+    const toks=[]; let m; re.lastIndex=0;
+    while (re.lastIndex < src.length){ const st=re.lastIndex; m = re.exec(src); if (!m || re.lastIndex===st){ if (/^\s*$/.test(src.slice(st))) break; throw new Error('unsupported'); }
+      toks.push(m[1]?{e:m[1]}:m[2]?{r:m[2]}:m[3]?{n:+m[3]}:{o:m[4]}); }
+    let i=0;
+    const asNum = v => { if (v && v.err) return v; if (v==null||v==='') return v==='' ? {err:'#VALUE!'} : 0; if (typeof v==='number') return v; const n=Number(v); return isFinite(n)?n:{err:'#VALUE!'}; };
+    const bin = (a,b,op) => { a=asNum(a); b=asNum(b); if (a&&a.err) return a; if (b&&b.err) return b;
+      if (op==='+') return a+b; if (op==='-') return a-b; if (op==='*') return a*b; if (b===0) return {err:'#DIV/0!'}; return a/b; };
+    function prim(){ const t=toks[i++]; if (!t) throw new Error('eof');
+      if (t.n!==undefined) return t.n; if (t.e) return {err:t.e};
+      if (t.r){ const v = val(t.r); if (v===undefined) throw new Error('dep'); return v; }
+      if (t.o==='('){ const v=expr(); i++; return v; }
+      if (t.o==='-'){ const v=asNum(prim()); return v&&v.err?v:-v; }
+      if (t.o==='+') return prim();
+      throw new Error('bad'); }
+    function term(){ let v=prim(); while (toks[i] && (toks[i].o==='*'||toks[i].o==='/')){ const op=toks[i++].o; v=bin(v,prim(),op); } return v; }
+    function expr(){ let v=term(); while (toks[i] && (toks[i].o==='+'||toks[i].o==='-')){ const op=toks[i++].o; v=bin(v,term(),op); } return v; }
+    const v = expr(); if (i<toks.length) throw new Error('trailing');
+    return (v==null) ? 0 : v;
+  }
+  for (const [ref,c] of T.cells){
+    const f = kids(c,'f')[0]; if (!f) continue;
+    const v = val(ref); if (v===undefined) continue;
+    kids(c,'v').forEach(x=>c.removeChild(x));
+    const ve = T.doc.createElementNS(NS,'v');
+    if (v && v.err){ c.setAttribute('t','e'); ve.textContent = v.err; }
+    else if (typeof v==='number'){ c.removeAttribute('t'); ve.textContent = String(v); }
+    else { c.setAttribute('t','str'); ve.textContent = String(v??''); }
+    c.appendChild(ve);
+  }
+}
+
+/* ---------- 화면 ---------- */
+document.querySelectorAll('.drop').forEach(d => {
+  const inp = d.querySelector('input');
+  d.addEventListener('dragover', e => { e.preventDefault(); d.classList.add('over'); });
+  d.addEventListener('dragleave', () => d.classList.remove('over'));
+  d.addEventListener('drop', e => { e.preventDefault(); d.classList.remove('over'); if (e.dataTransfer.files[0]) handleFile(inp.dataset.k, e.dataTransfer.files[0]); });
+  inp.addEventListener('change', () => { if (inp.files[0]) handleFile(inp.dataset.k, inp.files[0]); });
+});
+
+async function handleFile(k, file){
+  const d = $('d-'+k);
+  try {
+    msg('loadMsg','', '');
+    if (k==='tpl'){ S.buf.tpl = await file.arrayBuffer(); S.tpl = await parseTemplate(S.buf.tpl.slice(0)); S.tplName = file.name; }
+    else if (k==='pos'||k==='posPrev') S[k] = await parsePOS(file);
+    else S[k] = await parseDLV(file);
+    d.classList.add('done'); d.querySelector('.f').textContent = '✓ ' + file.name;
+    if (k==='dlv' || (k==='pos' && !S.dlv)) autoPeriod();
+    build();
+  } catch(e){
+    console.error(e); d.classList.remove('done'); d.querySelector('.f').textContent = '';
+    msg('loadMsg','err', `<b>${file.name}</b>을(를) 읽지 못했어요. ${e.message||e}`);
+  }
+}
+
+function autoPeriod(){
+  const p = (S.dlv && S.dlv.period) || (S.pos && S.pos.period); if (!p || !p.start) return;
+  const s = p.start, e = p.end || new Date(s.getFullYear(), s.getMonth()+1, 0);
+  const y6 = d => String(d.getFullYear()).slice(2) + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0');
+  $('periodLabel').value = `${s.getMonth()+1}월\n${y6(s)}~${y6(e)}`;
+  S.period = {start:s, end:e};
+}
+
+function pickVal(src, which){
+  if (!src) return null;
+  if (which==='pos') return $('hallBasis').value==='mp' ? src.mp : src.net;
+  return $('dlvBasis').value==='bc' ? src.bc : src.app;
+}
+
+function build(){
+  const area = $('tblArea');
+  if (!S.tpl || !S.pos || !S.dlv){ $('genBtn').disabled = true; return; }
+  const map = loadMap();
+  const posNames = [...S.pos.stores.keys()], dlvNames = [...S.dlv.stores.keys()];
+  const posPrevNames = S.posPrev ? [...S.posPrev.stores.keys()] : [], dlvPrevNames = S.dlvPrev ? [...S.dlvPrev.stores.keys()] : [];
+  S.rows = S.tpl.rows.map(({r,name}) => {
+    const ov = map[name] || {};
+    const pos = ov.pos!==undefined ? (ov.pos==='' ? null : ov.pos) : bestMatch(name, posNames);
+    const dlv = ov.dlv!==undefined ? (ov.dlv==='' ? null : ov.dlv) : bestMatch(name, dlvNames);
+    return { r, name, pos: posNames.includes(pos)?pos:null, dlv: dlvNames.includes(dlv)?dlv:null,
+      posPrev: S.posPrev ? bestMatch(pos||name, posPrevNames) || bestMatch(name, posPrevNames) : null,
+      dlvPrev: S.dlvPrev ? bestMatch(dlv||name, dlvPrevNames) || bestMatch(name, dlvPrevNames) : null };
+  });
+  const opt = (names, sel) => `<option value="">— 없음 —</option>` + names.map(n=>`<option ${n===sel?'selected':''}>${n}</option>`).join('');
+  let html = `<div class="tblwrap"><table><thead><tr><th>보고서 매장명</th><th>POS 매장</th><th style="text-align:right">홀매출</th><th>배달 매장</th><th style="text-align:right">배달매출</th>${S.posPrev||S.dlvPrev?'<th style="text-align:right">전년 홀</th><th style="text-align:right">전년 배달</th>':''}<th>상태</th></tr></thead><tbody>`;
+  S.rows.forEach((x,i) => {
+    html += `<tr data-i="${i}"><td><b>${x.name}</b></td>
+      <td><select data-f="pos">${opt(posNames,x.pos)}</select></td>
+      <td class="n"><input type="text" data-v="hall"></td>
+      <td><select data-f="dlv">${opt(dlvNames,x.dlv)}</select></td>
+      <td class="n"><input type="text" data-v="dlv"></td>
+      ${S.posPrev||S.dlvPrev?'<td class="n"><input type="text" data-v="hallPrev"></td><td class="n"><input type="text" data-v="dlvPrev"></td>':''}
+      <td data-st></td></tr>`;
+  });
+  html += `</tbody></table></div><div class="sum" id="sum"></div><div class="extra" id="extra"></div>`;
+  area.innerHTML = html;
+  area.querySelectorAll('tr[data-i]').forEach(tr => {
+    const x = S.rows[+tr.dataset.i];
+    tr.querySelectorAll('select').forEach(sel => sel.addEventListener('change', () => {
+      x[sel.dataset.f] = sel.value || null;
+      const m = loadMap(); m[x.name] = m[x.name] || {}; m[x.name][sel.dataset.f] = sel.value; saveMap(m);
+      fillRow(tr, x, sel.dataset.f); refreshSummary();
+    }));
+    tr.querySelectorAll('input').forEach(inp => {
+      inp.addEventListener('change', () => { inp.value = inp.value.trim()==='' ? '' : fmt(num(inp.value)); refreshSummary(); });
+    });
+    fillRow(tr, x);
+  });
+  refreshSummary();
+  $('genBtn').disabled = false;
+}
+function fillRow(tr, x, only){
+  const set = (k, v) => { tr.querySelector(`[data-v="${k}"]`) && (tr.querySelector(`[data-v="${k}"]`).value = v==null ? '' : fmt(v)); };
+  if (!only || only==='pos') set('hall', x.pos ? pickVal(S.pos.stores.get(x.pos),'pos') : null);
+  if (!only || only==='dlv') set('dlv', x.dlv ? pickVal(S.dlv.stores.get(x.dlv),'dlv') : null);
+  if (!only){
+    if (S.posPrev) set('hallPrev', x.posPrev ? pickVal(S.posPrev.stores.get(x.posPrev),'pos') : null);
+    if (S.dlvPrev) set('dlvPrev', x.dlvPrev ? pickVal(S.dlvPrev.stores.get(x.dlvPrev),'dlv') : null);
+  }
+}
+function readRow(tr){
+  const g = k => { const el = tr.querySelector(`[data-v="${k}"]`); if (!el || el.value.trim()==='') return null; return num(el.value); };
+  return { hall:g('hall'), dlv:g('dlv'), hallPrev:g('hallPrev'), dlvPrev:g('dlvPrev') };
+}
+function refreshSummary(){
+  let th=0, td=0, miss=[];
+  document.querySelectorAll('tr[data-i]').forEach(tr => {
+    const x = S.rows[+tr.dataset.i], v = readRow(tr);
+    th += v.hall||0; td += v.dlv||0;
+    const st = tr.querySelector('[data-st]');
+    if (v.hall==null && v.dlv==null){ st.innerHTML = '<span class="badge b-err">데이터 없음</span>'; miss.push(x.name); }
+    else if (v.hall==null) st.innerHTML = '<span class="badge b-warn">홀 없음</span>';
+    else if (v.dlv==null) st.innerHTML = '<span class="badge b-warn">배달 없음</span>';
+    else st.innerHTML = '<span class="badge b-ok">OK</span>';
+  });
+  const usedP = new Set(S.rows.map(r=>r.pos)), usedD = new Set(S.rows.map(r=>r.dlv));
+  const leftP = [...S.pos.stores.keys()].filter(n=>!usedP.has(n)), leftD = [...S.dlv.stores.keys()].filter(n=>!usedD.has(n));
+  $('sum').innerHTML = `<span>매장 <strong>${S.rows.length}</strong>곳</span><span>홀 합계 <strong>${fmt(th)}</strong></span><span>배달 합계 <strong>${fmt(td)}</strong></span><span>총매출 <strong>${fmt(th+td)}</strong></span>`;
+  $('extra').innerHTML = (leftP.length?`· 보고서에 없는 POS 매장: ${leftP.join(', ')}<br>`:'') + (leftD.length?`· 보고서에 없는 배달 매장: ${leftD.join(', ')}`:'') +
+    (miss.length?`<br>· 데이터가 하나도 없는 매장(빈칸으로 남아요): ${miss.join(', ')}`:'');
+}
+
+$('hallBasis').addEventListener('change', () => { saveOpt(); build(); });
+$('dlvBasis').addEventListener('change', () => { saveOpt(); build(); });
+$('fixFormula').addEventListener('change', saveOpt);
+function saveOpt(){ localStorage.setItem(LS_OPT, JSON.stringify({hall:$('hallBasis').value, dlv:$('dlvBasis').value, fix:$('fixFormula').checked})); }
+(function loadOpt(){ try { const o = JSON.parse(localStorage.getItem(LS_OPT)||'{}'); if (o.hall) $('hallBasis').value=o.hall; if (o.dlv) $('dlvBasis').value=o.dlv; if (o.fix===false) $('fixFormula').checked=false; } catch(e){} })();
+
+$('genBtn').addEventListener('click', async () => {
+  try {
+    $('genBtn').disabled = true; msg('genMsg','', '');
+    const T = await parseTemplate(S.buf.tpl.slice(0));
+    const hc = T.hallCol, dc = T.dlvCol, L = colStr;
+    const label = $('periodLabel').value.trim();
+    if (label){ setStr(T, L(hc)+T.hdrRow, label); setStr(T, L(dc)+T.hdrRow, label); }
+    const hasPrev = !!(S.posPrev || S.dlvPrev);
+    let fixed = 0;
+    document.querySelectorAll('tr[data-i]').forEach(tr => {
+      const x = S.rows[+tr.dataset.i], v = readRow(tr), r = x.r;
+      setNum(T, L(hc)+r, v.hall); setNum(T, L(dc)+r, v.dlv);
+      if (S.posPrev) setNum(T, L(hc+1)+r, v.hallPrev);
+      if (S.dlvPrev) setNum(T, L(dc+1)+r, v.dlvPrev);
+      if ($('fixFormula').checked){
+        for (const [act, tgt, rate] of [[hc, hc+3, hc+4],[dc, dc+3, dc+4]]){
+          const c = T.cells.get(L(rate)+r);
+          if (!c || !kids(c,'f').length){ setFormula(T, L(rate)+r, `${L(act)}${r}/${L(tgt)}${r}`); fixed++; }
+        }
+      }
+    });
+    recalc(T);
+    // 계산 체인 제거 + 열 때 전체 재계산 (엑셀이 자동으로 다시 만들어요)
+    const zip = T.zip;
+    if (zip.file('xl/calcChain.xml')){
+      zip.remove('xl/calcChain.xml');
+      let ct = await zip.file('[Content_Types].xml').async('string'); ct = ct.replace(/<Override[^>]*calcChain[^>]*\/>/g,''); zip.file('[Content_Types].xml', ct);
+      let rl = await zip.file('xl/_rels/workbook.xml.rels').async('string'); rl = rl.replace(/<Relationship[^>]*calcChain[^>]*\/>/g,''); zip.file('xl/_rels/workbook.xml.rels', rl);
+    }
+    let wbx = await zip.file('xl/workbook.xml').async('string');
+    if (/<calcPr\b/.test(wbx)) wbx = wbx.replace(/<calcPr\b([^>]*?)(\/?)>/, (m,a,s) => `<calcPr${a.replace(/\s*fullCalcOnLoad="[^"]*"/,'')} fullCalcOnLoad="1"${s}>`);
+    else wbx = wbx.replace(/(<\/sheets>(?:\s*<definedNames>[\s\S]*?<\/definedNames>)?)/, '$1<calcPr fullCalcOnLoad="1"/>');
+    zip.file('xl/workbook.xml', wbx);
+    let xml = new XMLSerializer().serializeToString(T.doc);
+    if (!xml.startsWith('<?xml')) xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' + xml;
+    zip.file(T.sheetPath, xml);
+    Object.keys(zip.files).forEach(k => { if (zip.files[k].dir) delete zip.files[k]; });
+    const out = await zip.generateAsync({type:'uint8array', compression:'DEFLATE', mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    window.__lastOutput = out;
+    const p = S.period; let fname = '매장매출보고.xlsx';
+    if (p && p.start){ const ym = `${p.start.getFullYear()}-${String(p.start.getMonth()+1).padStart(2,'0')}`;
+      const full = p.end && p.start.getDate()===1 && p.end.getDate()===new Date(p.end.getFullYear(), p.end.getMonth()+1, 0).getDate();
+      fname = `매장매출보고_${ym}${full?'':'_'+String(p.start.getDate()).padStart(2,'0')+'-'+String(p.end.getDate()).padStart(2,'0')}.xlsx`; }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([out],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
+    a.download = fname; document.body.appendChild(a); a.click(); a.remove();
+    msg('genMsg','ok', `<b>${fname}</b> 다운로드 완료! 매장 ${S.rows.length}곳의 홀·배달 매출을 채웠어요.${fixed?` (달성률 수식 ${fixed}칸 복구)`:''}${hasPrev?'':'<br>※ 전년 동기간 칸은 손대지 않았어요. 전년 파일을 올리면 같이 채워져요.'}`);
+  } catch(e){ console.error(e); msg('genMsg','err', '만드는 중 문제가 생겼어요: ' + (e.message||e)); }
+  finally { $('genBtn').disabled = false; }
+});
+</script>
+</body>
+</html>
