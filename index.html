@@ -3,156 +3,308 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>매장 매출 보고서 자동 취합</title>
+<title>매장 매출 보고서</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <style>
-  :root{--bg:#f5f6f8;--card:#fff;--line:#e4e7ec;--text:#1d2330;--sub:#667085;--accent:#2f5d50;--accent2:#e8f0ed;--warn:#b54708;--warnbg:#fff6ed;--err:#b42318;--errbg:#fef3f2;--ok:#027a48;--okbg:#ecfdf3;--up:#c4320a;--down:#175cd3}
+  :root{
+    --bg:#f4f5f7;--card:#fff;--line:#e6e8ec;--line2:#eef0f3;--text:#1b2230;--sub:#6b7280;--mute:#9aa1ad;
+    --accent:#2f5d50;--accent-2:#e7f0ec;--accent-3:#cfe2da;
+    --warn:#b45309;--warnbg:#fff7ed;--err:#b42318;--errbg:#fef3f2;--ok:#05603a;--okbg:#ecfdf3;
+    --up:#d1432b;--down:#2e6bd8;--ly:#c9ced6;
+    --r:16px;--sh:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.05);
+  }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--text);font-family:Pretendard,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-size:15px;line-height:1.5}
-  .wrap{max-width:1120px;margin:0 auto;padding:32px 20px 80px}
-  h1{font-size:24px;margin:0 0 4px}
-  .lead{color:var(--sub);margin:0 0 28px}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:18px}
-  .card.prep{background:#fbfcfb;border-style:dashed}
-  .step{display:flex;align-items:center;gap:10px;margin:0 0 14px;font-size:17px;font-weight:700;flex-wrap:wrap}
-  .step b{display:inline-flex;width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;font-size:14px;align-items:center;justify-content:center}
-  .step b.s{background:#98a2b3}
-  .step .h{font-weight:400;font-size:13px;color:var(--sub)}
-  .drops{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-  .drops.two{grid-template-columns:repeat(2,1fr)}
-  @media(max-width:800px){.drops,.drops.two{grid-template-columns:1fr}}
-  .drop{border:1.5px dashed #cbd2dc;border-radius:12px;padding:16px;cursor:pointer;transition:.15s;background:#fafbfc;min-height:112px;display:flex;flex-direction:column;gap:4px}
-  .drop:hover,.drop.over{border-color:var(--accent);background:var(--accent2)}
-  .drop.done{border-style:solid;border-color:var(--accent);background:var(--accent2)}
-  .drop .t{font-weight:700}
-  .drop .d{color:var(--sub);font-size:13px}
-  .drop .f{margin-top:auto;font-size:13px;color:var(--accent);font-weight:600;word-break:break-all}
-  .drop input{display:none}
-  .opts{display:grid;grid-template-columns:repeat(2,1fr);gap:14px 20px}
-  @media(max-width:800px){.opts{grid-template-columns:1fr}}
-  label.o{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:600}
-  label.o small{font-weight:400;color:var(--sub)}
-  select,input[type=text],input[type=date]{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;width:100%}
-  textarea{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;width:100%;resize:vertical}
-  .chk{display:flex;gap:8px;align-items:flex-start;font-size:14px}
-  .chk small{display:block;color:var(--sub)}
-  .msg{padding:10px 14px;border-radius:10px;font-size:14px;margin-top:12px}
-  .msg.warn{background:var(--warnbg);color:var(--warn)}
-  .msg.err{background:var(--errbg);color:var(--err)}
-  .msg.ok{background:var(--okbg);color:var(--ok)}
-  .tblwrap{overflow:auto;max-height:620px;border:1px solid var(--line);border-radius:10px}
-  table{border-collapse:collapse;width:100%;font-size:14px}
-  th,td{padding:7px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
-  th{background:#f9fafb;position:sticky;top:0;z-index:1;text-align:left;font-weight:600;color:var(--sub)}
-  td.n input{text-align:right;width:124px}
-  td.n input.prev{background:#f9fafb;color:#475467}
-  td select{width:180px}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--text);font-family:Pretendard,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;padding-bottom:110px}
+  button{font:inherit;cursor:pointer}
+  .wrap{max-width:1120px;margin:0 auto;padding:28px 24px 0}
+  .hidden{display:none!important}
+
+  /* 상단 */
+  .top{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+  .top h1{font-size:24px;letter-spacing:-.02em;margin:0}
+  .top p{margin:2px 0 0;color:var(--sub);font-size:14px}
+  .chips{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:#fff;border-radius:99px;padding:7px 13px;font-size:13px;color:var(--sub)}
+  .chip:hover{border-color:var(--accent)}
+  .chip .dot{width:8px;height:8px;border-radius:50%;background:#d0d5dd}
+  .chip.on .dot{background:#12b76a}
+  .chip b{color:var(--text);font-weight:600}
+
+  .banner{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--accent-2);border:1px solid var(--accent-3);border-radius:var(--r);padding:14px 18px;margin-bottom:16px;font-size:14px;flex-wrap:wrap}
+  .banner b{color:var(--accent)}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);padding:22px;margin-bottom:16px}
+
+  /* 업로드 */
+  .hero{position:relative;border:1.5px dashed #c7cdd6;border-radius:14px;padding:26px 20px;text-align:center;cursor:pointer;transition:.15s;background:#fafbfc}
+  .hero:hover{border-color:var(--accent);background:var(--accent-2)}
+  .hero .ic{width:44px;height:44px;border-radius:12px;background:var(--accent-2);color:var(--accent);display:inline-flex;align-items:center;justify-content:center;margin-bottom:8px}
+  .hero .t{font-weight:700;font-size:17px}
+  .hero .d{color:var(--sub);font-size:13px;margin-top:2px}
+  .hero .d u{color:var(--accent);text-underline-offset:3px}
+  .hero.compact{padding:10px 16px;display:flex;align-items:center;gap:10px;text-align:left}
+  .hero.compact .ic{width:30px;height:30px;margin:0;border-radius:9px}
+  .hero.compact .ic svg{width:16px;height:16px}
+  .hero.compact .t{font-size:14px}
+  .hero.compact .d{margin:0}
+  .slots{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+  @media(max-width:820px){.slots{grid-template-columns:1fr}}
+  .slot{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:#fff;text-align:left;cursor:pointer;transition:.15s}
+  .slot:hover{border-color:var(--accent)}
+  .slot .n{flex:none;width:30px;height:30px;border-radius:9px;background:var(--line2);color:var(--mute);font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center}
+  .slot.done .n{background:var(--accent);color:#fff}
+  .slot .tt{font-weight:600;font-size:14px}
+  .slot .ff{font-size:12px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:230px}
+  .slot.done .ff{color:var(--accent)}
+  .slot input{display:none}
+
+  /* KPI */
+  .kpis{display:grid;grid-template-columns:1.3fr repeat(4,1fr);gap:10px;margin-bottom:16px}
+  @media(max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}}
+  .kpi{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:var(--sh)}
+  .kpi .l{font-size:12px;color:var(--sub)}
+  .kpi .v{font-size:20px;font-weight:700;letter-spacing:-.02em;margin-top:2px}
+  .kpi .s{font-size:12px;color:var(--mute)}
+  .kpi.warn{cursor:pointer;border-color:#fed7aa;background:var(--warnbg)}
+  .kpi.warn .v{color:var(--warn)}
+  .kpi.good .v{color:var(--ok)}
+
+  /* 탭 */
+  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:-4px -22px 18px;padding:0 18px}
+  .tab{background:none;border:0;padding:12px 12px;color:var(--sub);font-weight:600;font-size:15px;border-bottom:2px solid transparent;margin-bottom:-1px;display:flex;align-items:center;gap:6px}
+  .tab.on{color:var(--text);border-bottom-color:var(--accent)}
+  .tab .cnt{font-size:11px;font-weight:700;background:var(--warnbg);color:var(--warn);border-radius:99px;padding:1px 7px}
+  .tab .cnt.zero{background:var(--okbg);color:var(--ok)}
+
+  /* 비교 */
+  .seg{display:inline-flex;background:var(--line2);border-radius:10px;padding:3px;gap:2px}
+  .seg button{border:0;background:none;border-radius:8px;padding:6px 14px;font-size:13px;font-weight:600;color:var(--sub)}
+  .seg button.on{background:#fff;color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+  .cmphead{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+  .cmphead .p{font-size:13px;color:var(--sub)}
+  .mcards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  @media(max-width:820px){.mcards{grid-template-columns:1fr}}
+  .mc{border:1px solid var(--line);border-radius:14px;padding:16px}
+  .mc .h{display:flex;justify-content:space-between;align-items:center}
+  .mc .h span{font-weight:700}
+  .pill{font-size:13px;font-weight:700;border-radius:99px;padding:2px 9px}
+  .pill.up{background:#fdecea;color:var(--up)} .pill.down{background:#e8effc;color:var(--down)} .pill.na{background:var(--line2);color:var(--mute)}
+  .mc .big{font-size:22px;font-weight:700;letter-spacing:-.02em;margin-top:8px}
+  .mc .small{font-size:12px;color:var(--sub)}
+  .bars{margin-top:12px;display:flex;flex-direction:column;gap:6px}
+  .bar{display:grid;grid-template-columns:34px 1fr 64px;align-items:center;gap:8px;font-size:12px;color:var(--sub)}
+  .bar i{display:block;height:10px;border-radius:5px;background:var(--accent)}
+  .bar.ly i{background:var(--ly)}
+  .bar em{font-style:normal;text-align:right;font-variant-numeric:tabular-nums}
+  details.more{margin-top:16px}
+  details.more summary{cursor:pointer;color:var(--sub);font-size:13px}
+  .cmp{border-collapse:collapse;width:100%;font-size:13px;margin-top:10px;font-variant-numeric:tabular-nums}
+  .cmp th,.cmp td{border:1px solid var(--line);text-align:center;padding:7px 8px;white-space:nowrap}
+  .cmp thead th{background:#f7f8fa;font-weight:600}
+  .cmp td.l{background:#f7f8fa;font-weight:600}
+  .cmp td.r{text-align:right}
+  .cmp td.up{color:var(--up);font-weight:700} .cmp td.down{color:var(--down);font-weight:700}
+  .empty{text-align:center;padding:34px 10px;color:var(--sub)}
+  .empty .t{font-weight:700;color:var(--text);font-size:16px;margin-bottom:4px}
+
+  /* 매장 표 */
+  .tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+  .search{flex:1;min-width:200px;max-width:320px}
+  .tog{display:inline-flex;align-items:center;gap:7px;font-size:14px;color:var(--sub);cursor:pointer;user-select:none}
+  .tblwrap{overflow:auto;max-height:560px;border:1px solid var(--line);border-radius:12px}
+  table.st{border-collapse:collapse;width:100%;font-size:14px}
+  .st th,.st td{padding:7px 10px;border-bottom:1px solid var(--line2);white-space:nowrap}
+  .st th{background:#f9fafb;position:sticky;top:0;z-index:1;text-align:left;font-weight:600;color:var(--sub);font-size:13px}
+  .st th.r{text-align:right}
+  .st tr.issue td{background:#fffbf5}
+  .st td.n input{text-align:right;width:104px;font-variant-numeric:tabular-nums;padding:7px 8px}
+  .st td.n input.prev{background:#f9fafb;color:#475467}
+  .st td select{width:150px;padding:7px 8px}
+  .st th,.st td{padding:6px 8px}
+  .st th.grp{border-left:1px solid var(--line)} .st td.grp{border-left:1px solid var(--line2)}
   .badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:12px;font-weight:600}
   .b-ok{background:var(--okbg);color:var(--ok)} .b-warn{background:var(--warnbg);color:var(--warn)} .b-err{background:var(--errbg);color:var(--err)}
-  .sum{display:flex;gap:24px;flex-wrap:wrap;margin:14px 0 4px;font-size:14px;color:var(--sub)}
-  .sum strong{color:var(--text);font-size:16px}
-  .btns{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-  .btn{font:inherit;font-weight:700;border:0;border-radius:10px;padding:13px 22px;background:var(--accent);color:#fff;cursor:pointer;font-size:16px}
-  .btn:disabled{background:#c5ccd6;cursor:not-allowed}
+  .extra{font-size:13px;color:var(--sub);margin-top:12px;line-height:1.7}
+
+  /* 폼 */
+  select,input[type=text],input[type=date],input[type=search]{font:inherit;font-size:14px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:#fff;width:100%;color:var(--text)}
+  select:focus,input:focus,textarea:focus{outline:2px solid var(--accent-3);border-color:var(--accent)}
+  textarea{font:inherit;font-size:14px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;width:100%;resize:vertical}
+  .opts{display:grid;grid-template-columns:repeat(2,1fr);gap:18px 24px}
+  @media(max-width:820px){.opts{grid-template-columns:1fr}}
+  label.o{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:600}
+  label.o small{font-weight:400;color:var(--sub)}
+  .chk{display:flex;gap:9px;align-items:flex-start;font-size:14px;font-weight:600}
+  .chk input{margin-top:4px;accent-color:var(--accent)}
+  .chk small{display:block;color:var(--sub);font-weight:400}
+  .msg{padding:10px 14px;border-radius:10px;font-size:14px;margin-top:12px}
+  .msg.warn{background:var(--warnbg);color:var(--warn)} .msg.err{background:var(--errbg);color:var(--err)} .msg.ok{background:var(--okbg);color:var(--ok)}
+  .note{font-size:13px;color:var(--sub);background:#f9fafb;border-radius:10px;padding:10px 12px;margin-bottom:14px}
+  .note b.w{color:var(--warn)}
+
+  /* 하단 실행 바 */
+  .bar-wrap{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.94);backdrop-filter:blur(8px);border-top:1px solid var(--line);z-index:20}
+  .actionbar{max-width:1120px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .actionbar .info{flex:1;min-width:220px;font-size:14px;color:var(--sub)}
+  .actionbar .info b{color:var(--text)}
+  .btn{border:0;border-radius:11px;padding:12px 20px;background:var(--accent);color:#fff;font-weight:700;font-size:15px;display:inline-flex;align-items:center;gap:8px;transition:.15s}
+  .btn:hover{filter:brightness(1.08)}
+  .btn:disabled{background:#d0d5dd;cursor:not-allowed;filter:none}
   .btn.sec{background:#fff;color:var(--accent);border:1.5px solid var(--accent)}
-  .btn.sec:disabled{color:#98a2b3;border-color:#d0d5dd;background:#fff}
-  .btn.mini{font-weight:500;font-size:13px;padding:6px 12px;background:#fff;color:var(--sub);border:1px solid var(--line);border-radius:8px}
-  .extra{font-size:13px;color:var(--sub);margin-top:10px}
-  .ds{width:100%;font-size:13px}
-  .ds td,.ds th{padding:6px 8px}
-  .cmp{border:1px solid #98a2b3;font-size:13px;margin-top:8px}
-  .cmp th,.cmp td{border:1px solid #d0d5dd;text-align:center;position:static;padding:6px 8px}
-  .cmp thead th{background:#f2f4f7;color:var(--text)}
-  .cmp td.l{background:#f2f4f7;font-weight:700}
-  .cmp td.r{text-align:right}
-  .up{color:var(--up);font-weight:700} .down{color:var(--down);font-weight:700}
-  .cmpTitle{font-weight:700;margin:16px 0 0}
-  .foot{color:var(--sub);font-size:12px;text-align:center;margin-top:30px}
+  .btn.sec:disabled{color:var(--mute);border-color:#d0d5dd;background:#fff}
+  .btn.mini{font-weight:500;font-size:13px;padding:7px 12px;background:#fff;color:var(--sub);border:1px solid var(--line);border-radius:9px}
+  .btn.mini:hover{border-color:var(--accent);color:var(--accent);filter:none}
+  .savechk{font-size:13px;color:var(--sub);display:flex;align-items:center;gap:6px;cursor:pointer}
+  .savechk input{accent-color:var(--accent)}
+
+  /* 준비물 창 */
+  dialog{border:0;border-radius:18px;padding:0;width:min(760px,94vw);box-shadow:0 20px 60px rgba(16,24,40,.25)}
+  dialog::backdrop{background:rgba(16,24,40,.35)}
+  .dh{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;border-bottom:1px solid var(--line)}
+  .dh h2{margin:0;font-size:18px}
+  .x{border:0;background:var(--line2);width:32px;height:32px;border-radius:9px;font-size:18px;color:var(--sub)}
+  .db{padding:20px 22px 22px;max-height:75vh;overflow:auto}
+  .sec-t{font-weight:700;margin:4px 0 4px}
+  .sec-d{font-size:13px;color:var(--sub);margin-bottom:10px}
+  .drop{display:flex;align-items:center;gap:14px;border:1.5px dashed #c7cdd6;border-radius:12px;padding:14px 16px;cursor:pointer;background:#fafbfc;transition:.15s}
+  .drop:hover,.drop.over{border-color:var(--accent);background:var(--accent-2)}
+  .drop.done{border-style:solid;border-color:var(--accent-3);background:var(--accent-2)}
+  .drop .ic{flex:none;width:36px;height:36px;border-radius:10px;background:#fff;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--accent)}
+  .drop .t{font-weight:600;font-size:14px}
+  .drop .d{font-size:12px;color:var(--sub)}
+  .drop .f{margin-left:auto;font-size:13px;color:var(--accent);font-weight:600;text-align:right}
+  .drop input{display:none}
+  .ds{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
+  .ds td,.ds th{padding:7px 8px;border-bottom:1px solid var(--line2);text-align:left}
+  .ds th{color:var(--sub);font-weight:600;font-size:12px}
+  .dsep{height:1px;background:var(--line);margin:20px 0}
+  .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+
+  /* 드래그 오버레이 / 토스트 */
+  .overlay{position:fixed;inset:0;background:rgba(47,93,80,.12);backdrop-filter:blur(2px);z-index:50;display:flex;align-items:center;justify-content:center;pointer-events:none}
+  .overlay div{background:#fff;border:2px dashed var(--accent);border-radius:18px;padding:30px 40px;font-weight:700;font-size:18px;color:var(--accent);box-shadow:var(--sh)}
+  .toast{position:fixed;right:24px;bottom:92px;max-width:420px;background:#1b2230;color:#fff;border-radius:12px;padding:12px 16px;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.2);z-index:60;opacity:0;transform:translateY(8px);transition:.25s;pointer-events:none}
+  .toast.show{opacity:1;transform:none}
+  .toast.err{background:#912018}
+  .spin{width:14px;height:14px;border:2px solid rgba(255,255,255,.5);border-top-color:#fff;border-radius:50%;animation:sp .8s linear infinite;display:inline-block}
+  @keyframes sp{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>매장 매출 보고서 자동 취합</h1>
-  <p class="lead">파일 3개를 올리면 홀매출(POS)과 배달매출을 보고서 엑셀에 채우고, 전년 동기 비교 PPT까지 만들어요. 모든 처리는 이 PC 브라우저 안에서만 이뤄지고 파일이 외부로 나가지 않아요.</p>
+  <header class="top">
+    <div>
+      <h1>매장 매출 보고서</h1>
+      <p>홀(POS) + 배달 매출 취합 · 전년 동기 비교 PPT · 파일은 이 PC 밖으로 나가지 않아요</p>
+    </div>
+    <div class="chips">
+      <button class="chip" id="chipLy"><span class="dot"></span>작년 데이터 <b id="chipLyT">없음</b></button>
+      <button class="chip" id="chipPpt"><span class="dot"></span>PPT 양식 <b id="chipPptT">없음</b></button>
+    </div>
+  </header>
 
-  <!-- 준비 -->
-  <div class="card prep">
-    <div class="step"><b class="s">0</b>처음 한 번만 준비 <span class="h">· 이 PC 브라우저에 저장돼서 다음 달부터는 건너뛰어도 돼요</span></div>
-    <div class="drops two">
-      <label class="drop" id="d-ly"><span class="t">작년 매출 데이터 보관함</span><span class="d">작년 POS 파일 · 배달 파일 · 작년 매출보고 엑셀 · 간단 양식 — 여러 개를 한 번에 올려도 돼요</span><span class="f" id="lyInfo"></span><input type="file" multiple accept=".xls,.xlsx,.csv,.txt,.json" data-k="ly"></label>
-      <label class="drop" id="d-ppt"><span class="t">PPT 보고서 양식</span><span class="d">'매출 보고' PPT (표지 + 동일 매장 / 운영 매장 비교 슬라이드)</span><span class="f" id="pptInfo"></span><input type="file" accept=".pptx" data-k="ppt"></label>
-    </div>
-    <div id="lyList"></div>
-    <div class="btns" style="margin-top:10px">
-      <button class="btn mini" id="tplDl">간단 양식(엑셀) 받기</button>
-      <button class="btn mini" id="lyExport">보관함 백업 내보내기</button>
-      <button class="btn mini" id="lyClear">보관함 비우기</button>
-    </div>
-    <div id="prepMsg"></div>
+  <div class="banner hidden" id="setupBanner">
+    <div><b>처음 쓰시나요?</b> 작년 매출 데이터와 PPT 양식을 한 번만 등록해 두면, 매달 전년 동기 비교까지 자동으로 만들어져요.</div>
+    <button class="btn mini" id="bannerBtn">준비물 등록하기</button>
   </div>
 
-  <div class="card">
-    <div class="step"><b>1</b>이번 달 파일 올리기</div>
-    <div class="drops">
-      <label class="drop" id="d-tpl"><span class="t">① 보고서 양식</span><span class="d">지난달 보고서 엑셀(.xlsx) 그대로</span><span class="f"></span><input type="file" accept=".xlsx" data-k="tpl"></label>
-      <label class="drop" id="d-pos"><span class="t">② 홀매출 (POS)</span><span class="d">POS에서 받은 매장별 매출 (.xls / .xlsx / .csv)</span><span class="f"></span><input type="file" accept=".xls,.xlsx,.csv,.txt" data-k="pos"></label>
-      <label class="drop" id="d-dlv"><span class="t">③ 배달매출</span><span class="d">매장별매출_일별_채널별 시트가 있는 엑셀 (.xlsx)</span><span class="f"></span><input type="file" accept=".xlsx,.xls" data-k="dlv"></label>
+  <section class="card">
+    <div class="hero" id="hero">
+      <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M6 10l6-6 6 6"/><path d="M4 20h16"/></svg></div>
+      <div class="t">이번 달 파일 3개를 한 번에 끌어다 놓으세요</div>
+      <div class="d">보고서 양식 · POS 홀매출 · 배달매출 — 종류는 자동으로 구분해요 · 또는 <u>파일 선택</u></div>
+      <input type="file" id="heroInput" multiple accept=".xls,.xlsx,.csv,.txt" hidden>
+    </div>
+    <div class="slots">
+      <label class="slot" id="s-tpl"><span class="n">1</span><span><div class="tt">보고서 양식</div><div class="ff">지난달 보고서 엑셀</div></span><input type="file" accept=".xlsx" data-k="tpl"></label>
+      <label class="slot" id="s-pos"><span class="n">2</span><span><div class="tt">홀매출 (POS)</div><div class="ff">.xls / .xlsx / .csv</div></span><input type="file" accept=".xls,.xlsx,.csv,.txt" data-k="pos"></label>
+      <label class="slot" id="s-dlv"><span class="n">3</span><span><div class="tt">배달매출</div><div class="ff">일별·채널별 엑셀</div></span><input type="file" accept=".xlsx,.xls" data-k="dlv"></label>
     </div>
     <div id="loadMsg"></div>
-  </div>
+  </section>
 
-  <div class="card">
-    <div class="step"><b>2</b>설정 확인</div>
-    <div class="opts">
-      <label class="o">보고 기간 표시 (엑셀 헤더 문구)
-        <textarea id="periodLabel" rows="2" placeholder="예: 10월&#10;261001~261031"></textarea>
-        <small>배달 파일의 기간에서 자동으로 만들어요. 전년 동기간은 같은 날짜의 작년 기간이에요.</small>
-      </label>
-      <div style="display:flex;flex-direction:column;gap:14px">
-        <label class="o">홀매출 기준
-          <select id="hallBasis">
-            <option value="mp">매장판매 + 포장판매 (POS로 들어온 배달 제외) · 추천</option>
-            <option value="net">실판매 금액 전체 (POS 배달 포함)</option>
-          </select>
-          <small>배달앱 주문이 POS에도 '배달'로 잡히는 매장은 '실판매 금액'을 쓰면 배달이 두 번 더해져요.</small>
-        </label>
-        <label class="o">배달매출 기준
-          <select id="dlvBasis">
-            <option value="app">배달앱 합계 (배민·배민1·쿠팡이츠·요기요·땡겨요) · 추천</option>
-            <option value="bc">배민 + 배민1 + 쿠팡이츠만</option>
-          </select>
-        </label>
+  <section id="result" class="hidden">
+    <div class="kpis" id="kpis"></div>
+    <div class="card">
+      <div class="tabs">
+        <button class="tab on" data-tab="cmp">전년 동기 비교</button>
+        <button class="tab" data-tab="match">매장별 확인 <span class="cnt" id="issueCnt">0</span></button>
+        <button class="tab" data-tab="opt">설정</button>
       </div>
-      <label class="o">PPT 보고일 (표지 날짜·주차)
-        <input type="date" id="reportDate">
-      </label>
-      <label class="chk"><input type="checkbox" id="fixFormula" checked><span>달성률 칸 수식 복구<small>숫자로 덮어써진 '매출달성율' 칸을 =실적/목표 수식으로 되돌려요.</small></span></label>
+      <div class="panel" id="p-cmp"><div id="cmpArea"></div></div>
+      <div class="panel hidden" id="p-match">
+        <div class="tools">
+          <input type="search" class="search" id="q" placeholder="매장 이름 검색">
+          <label class="tog"><input type="checkbox" id="onlyIssue"> 확인 필요한 매장만 보기</label>
+        </div>
+        <div id="tblArea"></div>
+        <div class="extra" id="extra"></div>
+      </div>
+      <div class="panel hidden" id="p-opt">
+        <div class="opts">
+          <label class="o">엑셀 헤더 기간 문구
+            <textarea id="periodLabel" rows="2"></textarea>
+            <small>배달 파일 기간으로 자동 작성돼요. 전년 동기간은 작년 같은 날짜예요.</small>
+          </label>
+          <label class="o">PPT 보고일 (표지 날짜·주차)
+            <input type="date" id="reportDate">
+            <small>표지에 '2026. 11. 17 (47W)'처럼 들어가요.</small>
+          </label>
+          <label class="o">홀매출 기준
+            <select id="hallBasis">
+              <option value="mp">매장판매 + 포장판매 (POS 배달 제외) · 추천</option>
+              <option value="net">실판매 금액 전체 (POS 배달 포함)</option>
+            </select>
+            <small>배달앱 주문이 POS에도 '배달'로 잡히는 매장은 실판매 금액을 쓰면 배달이 두 번 더해져요.</small>
+          </label>
+          <label class="o">배달매출 기준
+            <select id="dlvBasis">
+              <option value="app">배달앱 합계 (배민·배민1·쿠팡이츠·요기요·땡겨요) · 추천</option>
+              <option value="bc">배민 + 배민1 + 쿠팡이츠만</option>
+            </select>
+          </label>
+          <label class="chk"><input type="checkbox" id="fixFormula" checked><span>엑셀 달성률 칸 수식 복구<small>숫자로 덮어써진 '매출달성율' 칸을 =실적/목표 수식으로 되돌려요.</small></span></label>
+        </div>
+      </div>
     </div>
-  </div>
-
-  <div class="card">
-    <div class="step"><b>3</b>매장별 매칭 확인 <span class="h">· 매칭이 틀렸으면 고르고, 다른 POS를 쓰는 매장은 금액을 직접 입력해도 돼요 (매칭은 다음 달에도 기억해요)</span></div>
-    <div id="tblArea"><div class="extra">파일 ①②③을 올리면 여기에 매장 목록이 나와요.</div></div>
-  </div>
-
-  <div class="card">
-    <div class="step"><b>4</b>전년 동기 비교 미리보기</div>
-    <div id="cmpArea"><div class="extra">파일을 올리고 보관함에 작년 데이터가 있으면 여기에 비교표가 나와요.</div></div>
-  </div>
-
-  <div class="card">
-    <div class="step"><b>5</b>보고서 만들기</div>
-    <div class="btns">
-      <button class="btn" id="genBtn" disabled>엑셀 보고서 다운로드</button>
-      <button class="btn sec" id="pptBtn" disabled>PPT 동기 비교 보고서 다운로드</button>
-    </div>
-    <label class="chk" style="margin-top:14px"><input type="checkbox" id="saveCur" checked><span>이번 기간 매출도 보관함에 저장<small>내년에는 작년 데이터를 따로 올리지 않아도 바로 비교돼요.</small></span></label>
-    <div id="genMsg"></div>
-  </div>
-  <div class="foot">엑셀·PPT 양식의 서식과 디자인은 그대로 두고 숫자만 바꿔요.</div>
+  </section>
 </div>
+
+<div class="bar-wrap">
+  <div class="actionbar">
+    <div class="info" id="barInfo">파일 3개를 올리면 보고서를 만들 수 있어요.</div>
+    <label class="savechk" title="내년에는 작년 데이터를 따로 올리지 않아도 돼요"><input type="checkbox" id="saveCur" checked> 이번 매출 보관함에 저장</label>
+    <button class="btn sec" id="pptBtn" disabled>PPT 비교 보고서</button>
+    <button class="btn" id="genBtn" disabled>엑셀 보고서</button>
+  </div>
+</div>
+
+<dialog id="prep">
+  <div class="dh"><h2>준비물 관리</h2><button class="x" id="prepClose" aria-label="닫기">×</button></div>
+  <div class="db">
+    <div class="sec-t">작년 매출 데이터 보관함</div>
+    <div class="sec-d">전년 동기 비교에 쓰여요. 작년 POS 파일, 배달 파일(일별), 작년 매출보고 엑셀, 간단 양식 중 아무거나 여러 개를 한 번에 올려도 돼요. 일별 데이터가 있으면 15일치 같은 부분 기간도 정확하게 비교돼요.</div>
+    <label class="drop" id="d-ly"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg></span><span><div class="t">파일 추가</div><div class="d">끌어다 놓거나 눌러서 선택</div></span><span class="f" id="lyInfo"></span><input type="file" multiple accept=".xls,.xlsx,.csv,.txt,.json" data-k="ly"></label>
+    <div id="lyList"></div>
+    <div class="btns">
+      <button class="btn mini" id="tplDl">간단 양식(엑셀) 받기</button>
+      <button class="btn mini" id="lyExport">백업 내보내기</button>
+      <button class="btn mini" id="lyClear">보관함 비우기</button>
+    </div>
+    <div class="dsep"></div>
+    <div class="sec-t">PPT 보고서 양식</div>
+    <div class="sec-d">표지 + '동일 매장' / '운영 매장' 비교 슬라이드가 있는 매출 보고 PPT예요. 디자인은 그대로 두고 숫자·날짜만 바꿔요.</div>
+    <label class="drop" id="d-ppt"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8M12 18v3M7 13l3-3 3 2 4-4"/></svg></span><span><div class="t">PPT 양식 올리기</div><div class="d">.pptx · 한 번만 올리면 기억해요</div></span><span class="f" id="pptInfo"></span><input type="file" accept=".pptx" data-k="ppt"></label>
+    <div id="prepMsg"></div>
+    <div class="sec-d" style="margin-top:16px">※ 보관함과 양식은 이 PC 브라우저에만 저장돼요. 다른 PC에서는 '백업 내보내기' 파일을 보관함에 올리면 그대로 옮겨져요.</div>
+  </div>
+</dialog>
+
+<div class="overlay hidden" id="overlay"><div>놓으면 종류를 자동으로 구분해서 올려요</div></div>
+<div class="toast" id="toast"></div>
 
 <script>
 'use strict';
@@ -381,18 +533,6 @@ async function ingestLY(file){
   throw new Error('어떤 종류의 파일인지 알아보지 못했어요. (POS / 배달 / 매출보고 엑셀 / 간단 양식만 가능)');
 }
 async function saveLY(){ await idb.set('lyDatasets', S.ly); renderLY(); }
-function renderLY(){
-  const stores = new Set(); S.ly.forEach(d => d.rows.forEach(r => stores.add(r.s)));
-  $('lyInfo').textContent = S.ly.length ? `✓ ${S.ly.length}개 파일 저장됨` : '';
-  $('d-ly').classList.toggle('done', S.ly.length>0);
-  if (!S.ly.length){ $('lyList').innerHTML = ''; return; }
-  const list = [...S.ly].sort((x,y)=>x.a-y.a);
-  $('lyList').innerHTML = `<div class="tblwrap" style="margin-top:12px;max-height:240px"><table class="ds"><thead><tr><th>파일</th><th>종류</th><th>기간</th><th>매장 수</th><th></th></tr></thead><tbody>` +
-    list.map(d => `<tr><td>${esc(d.name)}${d.auto?' <span class="badge b-ok">자동 저장</span>':''}</td><td>${esc(d.type)}</td><td>${ymdDots(fromDay(d.a))} ~ ${ymdDots(fromDay(d.b))}</td><td>${new Set(d.rows.map(r=>r.s)).size}</td><td><button class="btn mini" data-del="${d.id}">삭제</button></td></tr>`).join('') +
-    `</tbody></table></div>`;
-  $('lyList').querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async () => { S.ly = S.ly.filter(d => d.id!==b.dataset.del); await saveLY(); build(); }));
-}
-
 /* 작년 동기간 값 계산: 일별 데이터 우선, 기간 데이터는 겹치는 날짜만큼 비례 계산 */
 function lyCompute(A, B){
   const hb = $('hallBasis').value, db = $('dlvBasis').value;
@@ -520,52 +660,6 @@ function recalc(T){
     c.appendChild(ve); }
 }
 
-/* ---------- 화면: 파일 올리기 ---------- */
-document.querySelectorAll('.drop').forEach(d => {
-  const inp = d.querySelector('input');
-  d.addEventListener('dragover', e => { e.preventDefault(); d.classList.add('over'); });
-  d.addEventListener('dragleave', () => d.classList.remove('over'));
-  d.addEventListener('drop', e => { e.preventDefault(); d.classList.remove('over'); if (e.dataTransfer.files.length) handleFiles(inp.dataset.k, [...e.dataTransfer.files]); });
-  inp.addEventListener('change', () => { if (inp.files.length) handleFiles(inp.dataset.k, [...inp.files]); inp.value=''; });
-});
-async function handleFiles(k, files){
-  if (k==='ly'){
-    const ok=[], bad=[];
-    for (const f of files){ try { const ds = await ingestLY(f); S.ly.push(...ds); ok.push(f.name); } catch(e){ console.error(e); bad.push(`${esc(f.name)}: ${esc(e.message||e)}`); } }
-    await saveLY(); build();
-    msg('prepMsg', bad.length ? 'warn' : 'ok', (ok.length?`보관함에 ${ok.length}개 파일을 저장했어요.`:'') + (bad.length?`<br>못 읽은 파일 — ${bad.join('<br>')}`:''));
-    return;
-  }
-  const file = files[0];
-  if (k==='ppt'){
-    try { const buf = await file.arrayBuffer(); await JSZip.loadAsync(buf); S.ppt = {name:file.name, buf}; await idb.set('pptTemplate', S.ppt); renderPpt(); build(); msg('prepMsg','ok','PPT 양식을 저장했어요.'); }
-    catch(e){ msg('prepMsg','err', `PPT 양식을 읽지 못했어요: ${esc(e.message||e)}`); }
-    return;
-  }
-  const d = $('d-'+k);
-  try {
-    msg('loadMsg','', '');
-    if (k==='tpl'){ S.buf.tpl = await file.arrayBuffer(); S.tpl = await parseTemplate(S.buf.tpl.slice(0)); }
-    else { const sheets = await fileToSheets(file);
-      if (k==='pos'){ S.pos = parsePOSSheets(sheets); if (!S.pos) throw new Error('POS 파일에서 "매장명 / 실판매 금액" 머리글을 찾지 못했어요.'); }
-      else { S.dlv = parseDLVSheets(sheets); if (!S.dlv) throw new Error('배달 파일에서 "매장명 / 채널 / 매출" 머리글을 찾지 못했어요. (매장별매출_일별_채널별 시트가 필요해요)'); } }
-    d.classList.add('done'); d.querySelector('.f').textContent = '✓ ' + file.name;
-    if (k==='dlv' || (k==='pos' && !S.dlv)) autoPeriod();
-    build();
-  } catch(e){ console.error(e); d.classList.remove('done'); d.querySelector('.f').textContent = '';
-    msg('loadMsg','err', `<b>${esc(file.name)}</b>을(를) 읽지 못했어요. ${esc(e.message||e)}`); }
-}
-function renderPpt(){ $('pptInfo').textContent = S.ppt ? '✓ ' + S.ppt.name : ''; $('d-ppt').classList.toggle('done', !!S.ppt); }
-function autoPeriod(){
-  const p = (S.dlv && S.dlv.period) || (S.pos && S.pos.period); if (!p || !p.start) return;
-  const s = p.start, e = p.end || new Date(s.getFullYear(), s.getMonth()+1, 0);
-  const y6 = d => String(d.getFullYear()).slice(2) + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0');
-  $('periodLabel').value = `${s.getMonth()+1}월\n${y6(s)}~${y6(e)}`;
-  S.period = {start:s, end:e};
-}
-function pickVal(src, which){ if (!src) return null; if (which==='pos') return $('hallBasis').value==='mp' ? src.mp : src.net; return $('dlvBasis').value==='bc' ? src.bc : src.app; }
-
-/* ---------- 매장 목록 + 작년 값 ---------- */
 function lyPeriod(){ if (!S.period) return null; const a = lastYear(S.period.start), b = lastYear(S.period.end); return {start:a, end:b, A:dayNum(a), B:dayNum(b)}; }
 function computeLY(){
   const lp = lyPeriod(); if (!lp || !S.ly.length) return null;
@@ -603,66 +697,6 @@ function currentEntries(withValues=true){
   return list.concat(extra);
 }
 
-function build(){
-  const area = $('tblArea');
-  if (!S.tpl || !S.pos || !S.dlv){ $('genBtn').disabled = true; $('pptBtn').disabled = true; return; }
-  const map = loadMap();
-  const posNames = [...S.pos.stores.keys()], dlvNames = [...S.dlv.stores.keys()];
-  S.rows = S.tpl.rows.map(({r,name}) => { const ov = map[name] || {};
-    const pos = ov.pos!==undefined ? (ov.pos==='' ? null : ov.pos) : bestMatch(name, posNames);
-    const dlv = ov.dlv!==undefined ? (ov.dlv==='' ? null : ov.dlv) : bestMatch(name, dlvNames);
-    return { r, name, pos: posNames.includes(pos)?pos:null, dlv: dlvNames.includes(dlv)?dlv:null }; });
-  const opt = (names, sel) => `<option value="">— 없음 —</option>` + names.map(n=>`<option ${n===sel?'selected':''}>${esc(n)}</option>`).join('');
-  let html = `<div class="tblwrap"><table><thead><tr><th>보고서 매장명</th><th>POS 매장</th><th style="text-align:right">홀매출</th><th>배달 매장</th><th style="text-align:right">배달매출</th><th style="text-align:right">전년 홀</th><th style="text-align:right">전년 배달</th><th>상태</th></tr></thead><tbody>`;
-  S.rows.forEach((x,i) => { html += `<tr data-i="${i}"><td><b>${esc(x.name)}</b></td>
-      <td><select data-f="pos">${opt(posNames,x.pos)}</select></td><td class="n"><input type="text" data-v="hall"></td>
-      <td><select data-f="dlv">${opt(dlvNames,x.dlv)}</select></td><td class="n"><input type="text" data-v="dlv"></td>
-      <td class="n"><input type="text" class="prev" data-v="hallPrev"></td><td class="n"><input type="text" class="prev" data-v="dlvPrev"></td><td data-st></td></tr>`; });
-  html += `</tbody></table></div><div class="sum" id="sum"></div><div class="extra" id="extra"></div>`;
-  area.innerHTML = html;
-  area.querySelectorAll('tr[data-i]').forEach(tr => { const x = S.rows[+tr.dataset.i];
-    tr.querySelectorAll('select').forEach(sel => sel.addEventListener('change', () => { x[sel.dataset.f] = sel.value || null;
-      const m = loadMap(); m[x.name] = m[x.name] || {}; m[x.name][sel.dataset.f] = sel.value; saveMap(m); fillRow(tr, x, sel.dataset.f); fillPrev(); refreshSummary(); }));
-    tr.querySelectorAll('input').forEach(inp => inp.addEventListener('change', () => { inp.value = inp.value.trim()==='' ? '' : fmt(num(inp.value)); refreshSummary(); }));
-    fillRow(tr, x); });
-  fillPrev();
-  refreshSummary();
-  $('genBtn').disabled = false;
-}
-function fillRow(tr, x, only){
-  const set = (k, v) => { const el = tr.querySelector(`[data-v="${k}"]`); if (el) el.value = v==null ? '' : fmt(v); };
-  if (!only || only==='pos') set('hall', x.pos ? pickVal(S.pos.stores.get(x.pos),'pos') : null);
-  if (!only || only==='dlv') set('dlv', x.dlv ? pickVal(S.dlv.stores.get(x.dlv),'dlv') : null);
-}
-function fillPrev(){
-  S.lyRes = computeLY();
-  document.querySelectorAll('tr[data-i]').forEach(tr => { const x = S.rows[+tr.dataset.i];
-    const v = S.lyRes ? S.lyRes.ly.get('R:'+x.name) : null;
-    tr.querySelector('[data-v="hallPrev"]').value = v && v.h!=null ? fmt(v.h) : '';
-    tr.querySelector('[data-v="dlvPrev"]').value = v && v.d!=null ? fmt(v.d) : '';
-    tr.querySelector('[data-v="hallPrev"]').title = v && v.est ? '일부 기간을 날짜 비율로 추정한 값' : ''; });
-}
-function readRow(tr){
-  const g = k => { const el = tr.querySelector(`[data-v="${k}"]`); if (!el || el.value.trim()==='') return null; return num(el.value); };
-  return { hall:g('hall'), dlv:g('dlv'), hallPrev:g('hallPrev'), dlvPrev:g('dlvPrev') };
-}
-function refreshSummary(){
-  let th=0, td=0, miss=[];
-  document.querySelectorAll('tr[data-i]').forEach(tr => { const x = S.rows[+tr.dataset.i], v = readRow(tr);
-    th += v.hall||0; td += v.dlv||0; const st = tr.querySelector('[data-st]');
-    if (v.hall==null && v.dlv==null){ st.innerHTML = '<span class="badge b-err">데이터 없음</span>'; miss.push(x.name); }
-    else if (v.hall==null) st.innerHTML = '<span class="badge b-warn">홀 없음</span>';
-    else if (v.dlv==null) st.innerHTML = '<span class="badge b-warn">배달 없음</span>';
-    else st.innerHTML = '<span class="badge b-ok">OK</span>'; });
-  const usedP = new Set(S.rows.map(r=>r.pos)), usedD = new Set(S.rows.map(r=>r.dlv));
-  const leftP = [...S.pos.stores.keys()].filter(n=>!usedP.has(n)), leftD = [...S.dlv.stores.keys()].filter(n=>!usedD.has(n));
-  $('sum').innerHTML = `<span>보고서 매장 <strong>${S.rows.length}</strong>곳</span><span>홀 합계 <strong>${fmt(th)}</strong></span><span>배달 합계 <strong>${fmt(td)}</strong></span><span>총매출 <strong>${fmt(th+td)}</strong></span>`;
-  $('extra').innerHTML = (leftP.length?`· 보고서에 없는 POS 매장 (PPT 비교에는 포함): ${esc(leftP.join(', '))}<br>`:'') + (leftD.length?`· 보고서에 없는 배달 매장 (PPT 비교에는 포함): ${esc(leftD.join(', '))}`:'') +
-    (miss.length?`<br>· 데이터가 하나도 없는 매장(빈칸으로 남아요): ${esc(miss.join(', '))}`:'');
-  renderCompare();
-}
-
-/* ---------- 전년 동기 비교 ---------- */
 function compare(){
   if (!S.period || !S.rows.length) return null;
   const R = S.lyRes; const days = dayNum(S.period.end) - dayNum(S.period.start) + 1;
@@ -690,26 +724,6 @@ function tableRows(C, days){
     daily: g.map(([k,n]) => [avg(C.cur[k],C.cur[n])/days, avg(C.ly[k],C.ly[n])/days, ''])
   };
 }
-function renderCompare(){
-  const X = compare(); const area = $('cmpArea');
-  $('pptBtn').disabled = !(X && S.ppt);
-  if (!X){ area.innerHTML = '<div class="extra">파일을 올리면 여기에 비교표가 나와요.</div>'; return; }
-  const lab = `${yy(S.period.start)}~${yy(S.period.end)}`; const lp = lyPeriod();
-  const cell = (v, isPct) => isPct ? `<td class="${v.startsWith('-')?'down':'up'}">${v}</td>` : `<td class="r">${fmt(v)}</td>`;
-  const tbl = (title, C) => { const t = tableRows(C, X.days);
-    const row = (name, arr) => `<tr><td class="l">${name}</td>${arr.map(([a,b,p]) => cell(a)+cell(b)+(p?cell(p,true):'<td></td>')).join('')}</tr>`;
-    return `<div class="cmpTitle">${title}</div><div style="overflow:auto"><table class="cmp"><thead><tr><th rowspan="2">내용</th><th colspan="3">홀</th><th colspan="3">배달</th><th colspan="3">홀+배달 (총매출)</th></tr><tr>${('<th>'+lab+'</th><th>전년 동기간 매출</th><th>등락%</th>').repeat(3)}</tr></thead><tbody>${row('총 매출',t.total)}${row('평균 매출',t.avg)}${row('일평균 매출',t.daily)}</tbody></table></div>`; };
-  let note = '';
-  if (!X.hasLY) note = `<div class="msg warn">보관함에 ${lp?ymdDots(lp.start)+' ~ '+ymdDots(lp.end):'작년 같은 기간'} 데이터가 없어서 전년 칸이 비어 있어요. 맨 위 '작년 매출 데이터 보관함'에 작년 파일을 올려 주세요.</div>`;
-  else { const R = X.R; const parts = [];
-    if (R.cover.h < R.total) parts.push(`홀: ${R.total}일 중 ${R.cover.h}일만 있음`);
-    if (R.cover.d < R.total) parts.push(`배달: ${R.total}일 중 ${R.cover.d}일만 있음`);
-    const est = [...R.ly.values()].some(v=>v.est);
-    note = `<div class="extra">전년 동기간: ${ymdDots(lp.start)} ~ ${ymdDots(lp.end)} (${X.days}일)${parts.length?` · <b style="color:var(--warn)">${parts.join(', ')}</b>`:''}${est?' · 일부 매장은 월 합계를 날짜 비율로 나눈 추정값':''}${R.closed.length?` · 작년에만 있는 매장 ${R.closed.length}곳(운영 매장 비교에만 포함)`:''}</div>`; }
-  area.innerHTML = note + tbl(`동기간 대비 매출 비교 (동일 매장 ${X.same.nCur}곳)`, X.same) + tbl(`동기간 대비 매출 비교 (동기간 운영 매장_${X.all.nCur}/${X.all.nLy})`, X.all) +
-    `<div class="extra">· 동일 매장 = 올해와 작년 같은 기간에 모두 매출이 있는 매장 · 평균 매출 = 합계 ÷ 매출이 있는 매장 수 · 일평균 = 평균 ÷ ${X.days}일${S.ppt?'':'<br>· PPT를 만들려면 맨 위에 PPT 보고서 양식을 한 번 올려 주세요.'}</div>`;
-}
-
 /* ---------- PPT 만들기 (양식 XML 직접 수정) ---------- */
 const A_NS='http://schemas.openxmlformats.org/drawingml/2006/main', P_NS='http://schemas.openxmlformats.org/presentationml/2006/main', C_NS='http://schemas.openxmlformats.org/drawingml/2006/chart', R_NS='http://schemas.openxmlformats.org/officeDocument/2006/relationships';
 const qa = (el, ns, tag) => Array.from(el.getElementsByTagNameNS(ns, tag));
@@ -815,7 +829,6 @@ async function makePpt(){
   return {out, fname, filled};
 }
 
-/* ---------- 내려받기 ---------- */
 function download(bytes, name, type){ const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([bytes],{type})); a.download = name; document.body.appendChild(a); a.click(); a.remove(); }
 async function autoSaveCurrent(){
   if (!$('saveCur').checked || !S.period) return 0;
@@ -827,56 +840,282 @@ async function autoSaveCurrent(){
   S.ly = S.ly.filter(d => !(d.auto && add.some(n => n.type===d.type && d.a>=A && d.b<=B)));
   S.ly.push(...add); await saveLY(); return 1;
 }
-$('genBtn').addEventListener('click', async () => {
-  try {
-    $('genBtn').disabled = true; msg('genMsg','', '');
-    const T = await parseTemplate(S.buf.tpl.slice(0));
-    const hc = T.hallCol, dc = T.dlvCol, L = colStr;
-    const label = $('periodLabel').value.trim();
-    if (label){ setStr(T, L(hc)+T.hdrRow, label); setStr(T, L(dc)+T.hdrRow, label); }
-    const hasPrev = !!S.lyRes; let fixed = 0;
-    document.querySelectorAll('tr[data-i]').forEach(tr => {
-      const x = S.rows[+tr.dataset.i], v = readRow(tr), r = x.r;
-      setNum(T, L(hc)+r, v.hall); setNum(T, L(dc)+r, v.dlv);
-      if (hasPrev){ setNum(T, L(hc+1)+r, v.hallPrev); setNum(T, L(dc+1)+r, v.dlvPrev); }
-      if ($('fixFormula').checked){ for (const [act, tgt, rate] of [[hc, hc+3, hc+4],[dc, dc+3, dc+4]]){ const c = T.cells.get(L(rate)+r);
-        if (!c || !kids(c,'f').length){ setFormula(T, L(rate)+r, `${L(act)}${r}/${L(tgt)}${r}`); fixed++; } } }
-    });
-    recalc(T);
-    const zip = T.zip;
-    if (zip.file('xl/calcChain.xml')){ zip.remove('xl/calcChain.xml');
-      let ct = await zip.file('[Content_Types].xml').async('string'); zip.file('[Content_Types].xml', ct.replace(/<Override[^>]*calcChain[^>]*\/>/g,''));
-      let rl = await zip.file('xl/_rels/workbook.xml.rels').async('string'); zip.file('xl/_rels/workbook.xml.rels', rl.replace(/<Relationship[^>]*calcChain[^>]*\/>/g,'')); }
-    let wbx = await zip.file('xl/workbook.xml').async('string');
-    if (/<calcPr\b/.test(wbx)) wbx = wbx.replace(/<calcPr\b([^>]*?)(\/?)>/, (m,a,s) => `<calcPr${a.replace(/\s*fullCalcOnLoad="[^"]*"/,'')} fullCalcOnLoad="1"${s}>`);
-    else wbx = wbx.replace(/(<\/sheets>(?:\s*<definedNames>[\s\S]*?<\/definedNames>)?)/, '$1<calcPr fullCalcOnLoad="1"/>');
-    zip.file('xl/workbook.xml', wbx);
-    serializeSheet(T);
-    Object.keys(zip.files).forEach(k => { if (zip.files[k].dir) delete zip.files[k]; });
-    const out = await zip.generateAsync({type:'uint8array', compression:'DEFLATE', mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-    window.__lastOutput = out;
-    const p = S.period; let fname = '매장매출보고.xlsx';
-    if (p && p.start){ const ym = `${p.start.getFullYear()}-${String(p.start.getMonth()+1).padStart(2,'0')}`;
-      const full = p.end && p.start.getDate()===1 && p.end.getDate()===new Date(p.end.getFullYear(), p.end.getMonth()+1, 0).getDate();
-      fname = `매장매출보고_${ym}${full?'':'_'+String(p.start.getDate()).padStart(2,'0')+'-'+String(p.end.getDate()).padStart(2,'0')}.xlsx`; }
-    if (!window.__noDownload) download(out, fname, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    const saved = await autoSaveCurrent();
-    msg('genMsg','ok', `<b>${esc(fname)}</b> 다운로드 완료! 매장 ${S.rows.length}곳의 홀·배달 매출을 채웠어요.${fixed?` (달성률 수식 ${fixed}칸 복구)`:''}${hasPrev?' 전년 동기간 칸도 보관함 데이터로 채웠어요.':'<br>※ 보관함에 작년 같은 기간 데이터가 없어 전년 동기간 칸은 손대지 않았어요.'}${saved?'<br>이번 기간 매출을 보관함에 저장했어요 (내년 비교용).':''}`);
-  } catch(e){ console.error(e); msg('genMsg','err', '만드는 중 문제가 생겼어요: ' + esc(e.message||e)); }
-  finally { $('genBtn').disabled = false; }
-});
-$('pptBtn').addEventListener('click', async () => {
-  try {
-    $('pptBtn').disabled = true; msg('genMsg','', '');
-    const {out, fname, filled} = await makePpt(); window.__lastPpt = out;
-    if (!window.__noDownload) download(out, fname, 'application/vnd.openxmlformats-officedocument.presentationml.presentation');
-    const saved = await autoSaveCurrent();
-    msg('genMsg','ok', `<b>${esc(fname)}</b> 다운로드 완료! 비교 슬라이드 ${filled}장과 표지 날짜를 바꿨어요.${S.lyRes?'':'<br>※ 보관함에 작년 데이터가 없어 전년 칸은 0으로 들어갔어요.'}${saved?'<br>이번 기간 매출을 보관함에 저장했어요 (내년 비교용).':''}`);
-  } catch(e){ console.error(e); msg('genMsg','err', 'PPT를 만드는 중 문제가 생겼어요: ' + esc(e.message||e)); }
-  finally { renderCompare(); }
-});
 
-/* ---------- 보관함 버튼 ---------- */
+/* =================== 화면 =================== */
+let cmpMode = 'same';
+function toast(html, type){ const t = $('toast'); t.innerHTML = html; t.className = 'toast show' + (type==='err'?' err':''); clearTimeout(toast._t); toast._t = setTimeout(() => t.className = 'toast' + (type==='err'?' err':''), type==='err'?8000:5000); }
+function pickVal(src, which){ if (!src) return null; if (which==='pos') return $('hallBasis').value==='mp' ? src.mp : src.net; return $('dlvBasis').value==='bc' ? src.bc : src.app; }
+function autoPeriod(){
+  const p = (S.dlv && S.dlv.period) || (S.pos && S.pos.period); if (!p || !p.start) return;
+  const s = p.start, e = p.end || new Date(s.getFullYear(), s.getMonth()+1, 0);
+  const y6 = d => String(d.getFullYear()).slice(2) + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0');
+  $('periodLabel').value = `${s.getMonth()+1}월\n${y6(s)}~${y6(e)}`;
+  S.period = {start:s, end:e};
+}
+const short = n => { n = Math.round(n||0); const a = Math.abs(n); if (a>=1e8) return (n/1e8).toFixed(a>=1e10?0:1)+'억'; if (a>=1e4) return Math.round(n/1e4).toLocaleString('ko-KR')+'만'; return n.toLocaleString('ko-KR'); };
+
+/* ----- 파일 올리기: 자동 구분 ----- */
+async function detectKind(file){
+  if (/\.pptx$/i.test(file.name)) return 'ppt';
+  const buf = await file.arrayBuffer();
+  if (/\.xlsx$/i.test(file.name)){ try { await parseTemplate(buf.slice(0)); return 'tpl'; } catch(e){} }
+  const sheets = await fileToSheets(file);
+  if (parsePOSSheets(sheets)) return 'pos';
+  if (parseDLVSheets(sheets)) return 'dlv';
+  return null;
+}
+async function smartDrop(files){
+  const bad = []; msg('loadMsg','','');
+  for (const f of files){
+    try { const k = await detectKind(f);
+      if (!k){ bad.push(f.name); continue; }
+      if (k==='ppt'){ await handlePrep('ppt', [f]); continue; }
+      await loadMonthly(k, f, true);
+    } catch(e){ console.error(e); bad.push(f.name); }
+  }
+  if (bad.length) msg('loadMsg','warn', `종류를 알아보지 못한 파일: <b>${bad.map(esc).join(', ')}</b> — 아래 칸을 눌러 직접 지정해 주세요.`);
+  afterLoad();
+}
+async function loadMonthly(k, file, quiet){
+  const slot = $('s-'+k);
+  try {
+    if (!quiet) msg('loadMsg','', '');
+    if (k==='tpl'){ S.buf.tpl = await file.arrayBuffer(); S.tpl = await parseTemplate(S.buf.tpl.slice(0)); }
+    else { const sheets = await fileToSheets(file);
+      if (k==='pos'){ const p = parsePOSSheets(sheets); if (!p) throw new Error('POS 파일에서 "매장명 / 실판매 금액" 머리글을 찾지 못했어요.'); S.pos = p; }
+      else { const d = parseDLVSheets(sheets); if (!d) throw new Error('배달 파일에서 "매장명 / 채널 / 매출" 머리글을 찾지 못했어요.'); S.dlv = d; } }
+    slot.classList.add('done'); slot.querySelector('.ff').textContent = '✓ ' + file.name;
+  } catch(e){ console.error(e); msg('loadMsg','err', `<b>${esc(file.name)}</b>을(를) 읽지 못했어요. ${esc(e.message||e)}`); }
+  if (!quiet) afterLoad();
+}
+function afterLoad(){ if (S.dlv || S.pos) autoPeriod(); build(); }
+
+/* ----- 준비물 ----- */
+async function handlePrep(k, files){
+  if (k==='ly'){
+    const ok=[], bad=[];
+    for (const f of files){ try { const ds = await ingestLY(f); S.ly.push(...ds); ok.push(f.name); } catch(e){ console.error(e); bad.push(`${esc(f.name)}: ${esc(e.message||e)}`); } }
+    await saveLY(); build();
+    msg('prepMsg', bad.length ? 'warn' : 'ok', (ok.length?`보관함에 ${ok.length}개 파일을 저장했어요.`:'') + (bad.length?`<br>못 읽은 파일 — ${bad.join('<br>')}`:''));
+    return;
+  }
+  const file = files[0];
+  try { const buf = await file.arrayBuffer(); await JSZip.loadAsync(buf); S.ppt = {name:file.name, buf}; await idb.set('pptTemplate', S.ppt); renderPpt(); build(); msg('prepMsg','ok','PPT 양식을 저장했어요.'); if (!$('prep').open) toast('PPT 양식을 저장했어요.'); }
+  catch(e){ msg('prepMsg','err', `PPT 양식을 읽지 못했어요: ${esc(e.message||e)}`); }
+}
+function renderLY(){
+  const n = S.ly.length;
+  $('lyInfo').textContent = n ? `${n}개 파일` : ''; $('d-ly').classList.toggle('done', n>0);
+  $('chipLy').classList.toggle('on', n>0);
+  if (n){ const a = Math.min(...S.ly.map(d=>d.a)), b = Math.max(...S.ly.map(d=>d.b)); $('chipLyT').textContent = `${ymdDots(fromDay(a)).slice(2)} ~ ${ymdDots(fromDay(b)).slice(2)}`; }
+  else $('chipLyT').textContent = '없음';
+  updateBanner();
+  if (!n){ $('lyList').innerHTML = ''; return; }
+  const list = [...S.ly].sort((x,y)=>x.a-y.a);
+  $('lyList').innerHTML = `<table class="ds"><thead><tr><th>파일</th><th>종류</th><th>기간</th><th>매장</th><th></th></tr></thead><tbody>` +
+    list.map(d => `<tr><td>${esc(d.name)}${d.auto?' <span class="badge b-ok">자동</span>':''}</td><td>${esc(d.type)}</td><td>${ymdDots(fromDay(d.a))} ~ ${ymdDots(fromDay(d.b))}</td><td>${new Set(d.rows.map(r=>r.s)).size}</td><td style="text-align:right"><button class="btn mini" data-del="${d.id}">삭제</button></td></tr>`).join('') + `</tbody></table>`;
+  $('lyList').querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async () => { S.ly = S.ly.filter(d => d.id!==b.dataset.del); await saveLY(); build(); }));
+}
+function renderPpt(){ $('pptInfo').textContent = S.ppt ? '✓ ' + S.ppt.name : ''; $('d-ppt').classList.toggle('done', !!S.ppt);
+  $('chipPpt').classList.toggle('on', !!S.ppt); $('chipPptT').textContent = S.ppt ? '등록됨' : '없음'; updateBanner(); }
+function updateBanner(){ $('setupBanner').classList.toggle('hidden', !!(S.ly.length && S.ppt)); }
+function openPrep(){ $('prep').showModal(); }
+
+/* ----- 매장 표 ----- */
+function build(){
+  const ready = S.tpl && S.pos && S.dlv;
+  $('result').classList.toggle('hidden', !ready);
+  $('hero').classList.toggle('compact', !!ready);
+  $('hero').querySelector('.t').textContent = ready ? '파일 바꾸기' : '이번 달 파일 3개를 한 번에 끌어다 놓으세요';
+  if (!ready){ $('genBtn').disabled = true; $('pptBtn').disabled = true; updateBar(); return; }
+  const map = loadMap();
+  const posNames = [...S.pos.stores.keys()], dlvNames = [...S.dlv.stores.keys()];
+  S.rows = S.tpl.rows.map(({r,name}) => { const ov = map[name] || {};
+    const pos = ov.pos!==undefined ? (ov.pos==='' ? null : ov.pos) : bestMatch(name, posNames);
+    const dlv = ov.dlv!==undefined ? (ov.dlv==='' ? null : ov.dlv) : bestMatch(name, dlvNames);
+    return { r, name, pos: posNames.includes(pos)?pos:null, dlv: dlvNames.includes(dlv)?dlv:null }; });
+  const opt = (names, sel) => `<option value="">— 없음 —</option>` + names.map(n=>`<option ${n===sel?'selected':''}>${esc(n)}</option>`).join('');
+  let html = `<div class="tblwrap"><table class="st"><thead><tr><th>상태</th><th>보고서 매장</th><th class="grp">POS 매장</th><th class="r">홀매출</th><th class="grp">배달 매장</th><th class="r">배달매출</th><th class="r grp">전년 홀</th><th class="r">전년 배달</th></tr></thead><tbody>`;
+  S.rows.forEach((x,i) => { html += `<tr data-i="${i}" data-name="${esc(norm(x.name)+' '+(x.pos||'')+' '+(x.dlv||''))}"><td data-st></td><td><b>${esc(x.name)}</b></td>
+      <td class="grp"><select data-f="pos">${opt(posNames,x.pos)}</select></td><td class="n"><input type="text" data-v="hall" inputmode="numeric"></td>
+      <td class="grp"><select data-f="dlv">${opt(dlvNames,x.dlv)}</select></td><td class="n"><input type="text" data-v="dlv" inputmode="numeric"></td>
+      <td class="n grp"><input type="text" class="prev" data-v="hallPrev" inputmode="numeric"></td><td class="n"><input type="text" class="prev" data-v="dlvPrev" inputmode="numeric"></td></tr>`; });
+  html += `</tbody></table></div>`;
+  $('tblArea').innerHTML = html;
+  $('tblArea').querySelectorAll('tr[data-i]').forEach(tr => { const x = S.rows[+tr.dataset.i];
+    tr.querySelectorAll('select').forEach(sel => sel.addEventListener('change', () => { x[sel.dataset.f] = sel.value || null;
+      const m = loadMap(); m[x.name] = m[x.name] || {}; m[x.name][sel.dataset.f] = sel.value; saveMap(m); fillRow(tr, x, sel.dataset.f); fillPrev(); refreshSummary(); }));
+    tr.querySelectorAll('input').forEach(inp => inp.addEventListener('change', () => { inp.value = inp.value.trim()==='' ? '' : fmt(num(inp.value)); refreshSummary(); }));
+    fillRow(tr, x); });
+  fillPrev(); refreshSummary();
+  $('genBtn').disabled = false;
+}
+function fillRow(tr, x, only){
+  const set = (k, v) => { const el = tr.querySelector(`[data-v="${k}"]`); if (el) el.value = v==null ? '' : fmt(v); };
+  if (!only || only==='pos') set('hall', x.pos ? pickVal(S.pos.stores.get(x.pos),'pos') : null);
+  if (!only || only==='dlv') set('dlv', x.dlv ? pickVal(S.dlv.stores.get(x.dlv),'dlv') : null);
+}
+function fillPrev(){
+  S.lyRes = computeLY();
+  document.querySelectorAll('tr[data-i]').forEach(tr => { const x = S.rows[+tr.dataset.i];
+    const v = S.lyRes ? S.lyRes.ly.get('R:'+x.name) : null;
+    tr.querySelector('[data-v="hallPrev"]').value = v && v.h!=null ? fmt(v.h) : '';
+    tr.querySelector('[data-v="dlvPrev"]').value = v && v.d!=null ? fmt(v.d) : '';
+    tr.querySelector('[data-v="hallPrev"]').title = v && v.est ? '월 합계를 날짜 비율로 나눈 추정값' : ''; });
+}
+function readRow(tr){
+  const g = k => { const el = tr.querySelector(`[data-v="${k}"]`); if (!el || el.value.trim()==='') return null; return num(el.value); };
+  return { hall:g('hall'), dlv:g('dlv'), hallPrev:g('hallPrev'), dlvPrev:g('dlvPrev') };
+}
+function applyFilter(){
+  const q = norm($('q').value), only = $('onlyIssue').checked;
+  document.querySelectorAll('tr[data-i]').forEach(tr => { const hit = !q || tr.dataset.name.includes(q) || tr.textContent.includes($('q').value.trim());
+    tr.classList.toggle('hidden', !hit || (only && !tr.classList.contains('issue'))); });
+}
+function refreshSummary(){
+  let th=0, td=0, issues=0; const miss=[];
+  document.querySelectorAll('tr[data-i]').forEach(tr => { const x = S.rows[+tr.dataset.i], v = readRow(tr);
+    th += v.hall||0; td += v.dlv||0; const st = tr.querySelector('[data-st]'); let ok = false;
+    if (v.hall==null && v.dlv==null){ st.innerHTML = '<span class="badge b-err">데이터 없음</span>'; miss.push(x.name); }
+    else if (v.hall==null) st.innerHTML = '<span class="badge b-warn">홀 없음</span>';
+    else if (v.dlv==null) st.innerHTML = '<span class="badge b-warn">배달 없음</span>';
+    else { st.innerHTML = '<span class="badge b-ok">OK</span>'; ok = true; }
+    tr.classList.toggle('issue', !ok); if (!ok) issues++; });
+  S.issues = issues;
+  const usedP = new Set(S.rows.map(r=>r.pos)), usedD = new Set(S.rows.map(r=>r.dlv));
+  const leftP = [...S.pos.stores.keys()].filter(n=>!usedP.has(n)), leftD = [...S.dlv.stores.keys()].filter(n=>!usedD.has(n));
+  $('issueCnt').textContent = issues; $('issueCnt').classList.toggle('zero', !issues);
+  $('extra').innerHTML = (leftP.length?`· 보고서에 없는 POS 매장 (PPT 비교에는 포함): ${esc(leftP.join(', '))}<br>`:'') + (leftD.length?`· 보고서에 없는 배달 매장 (PPT 비교에는 포함): ${esc(leftD.join(', '))}<br>`:'') +
+    `· 다른 POS를 쓰는 매장은 금액 칸에 직접 입력하면 돼요. 매칭을 바꾸면 다음 달에도 기억해요.`;
+  const p = S.period; const lab = p ? `${p.start.getMonth()+1}월` : '';
+  $('kpis').innerHTML = `
+    <div class="kpi"><div class="l">보고 기간</div><div class="v">${lab}</div><div class="s">${p?ymdDots(p.start)+' ~ '+ymdDots(p.end):''}</div></div>
+    <div class="kpi"><div class="l">홀 매출</div><div class="v">${short(th)}</div><div class="s">${fmt(th)}원</div></div>
+    <div class="kpi"><div class="l">배달 매출</div><div class="v">${short(td)}</div><div class="s">${fmt(td)}원</div></div>
+    <div class="kpi"><div class="l">총매출 (보고서 ${S.rows.length}개 매장)</div><div class="v">${short(th+td)}</div><div class="s">${fmt(th+td)}원</div></div>
+    <div class="kpi ${issues?'warn':'good'}" id="kpiIssue"><div class="l">확인 필요</div><div class="v">${issues?issues+'곳':'없음'}</div><div class="s">${issues?'눌러서 보기':'모든 매장 매칭 완료'}</div></div>`;
+  $('kpiIssue').addEventListener('click', () => { if (!issues) return; $('onlyIssue').checked = true; showTab('match'); applyFilter(); });
+  applyFilter(); renderCompare(); updateBar();
+}
+function updateBar(){
+  const ready = S.tpl && S.pos && S.dlv;
+  if (!ready){ const need = [!S.tpl&&'보고서 양식', !S.pos&&'POS 홀매출', !S.dlv&&'배달매출'].filter(Boolean);
+    $('barInfo').innerHTML = `남은 파일: <b>${need.join(', ')}</b>`; return; }
+  const p = S.period; const lp = lyPeriod();
+  $('barInfo').innerHTML = `<b>${p?yy(p.start)+'~'+yy(p.end):''}</b> · 매장 ${S.rows.length}곳${S.issues?` · <span style="color:var(--warn)">확인 필요 ${S.issues}곳</span>`:''} · ${S.lyRes?'전년 비교 준비됨':'<span style="color:var(--mute)">전년 데이터 없음</span>'}${S.ppt?'':' · <span style="color:var(--mute)">PPT 양식 없음</span>'}`;
+  $('pptBtn').title = !S.ppt ? '준비물 관리에서 PPT 양식을 먼저 올려 주세요' : '';
+}
+
+/* ----- 비교 ----- */
+function renderCompare(){
+  const X = compare(); const area = $('cmpArea');
+  $('pptBtn').disabled = !(X && S.ppt);
+  if (!X){ area.innerHTML = ''; return; }
+  const lp = lyPeriod();
+  if (!X.hasLY){
+    area.innerHTML = `<div class="empty"><div class="t">전년 데이터가 아직 없어요</div><div>${lp?ymdDots(lp.start)+' ~ '+ymdDots(lp.end):'작년 같은 기간'} 매출을 보관함에 올리면 여기에 비교가 나와요.</div><div class="btns" style="justify-content:center"><button class="btn mini" id="goPrep">작년 데이터 올리기</button></div></div>`;
+    $('goPrep').addEventListener('click', openPrep); return;
+  }
+  const R = X.R, C = X[cmpMode], lab = `${yy(S.period.start)}~${yy(S.period.end)}`;
+  const warn = [];
+  if (R.cover.h < R.total) warn.push(`홀 ${R.total}일 중 ${R.cover.h}일만 있음`);
+  if (R.cover.d < R.total) warn.push(`배달 ${R.total}일 중 ${R.cover.d}일만 있음`);
+  const est = [...R.ly.values()].some(v=>v.est);
+  const card = (name, k) => { const c = C.cur[k], l = C.ly[k], mx = Math.max(c,l,1); const d = l ? (c/l-1)*100 : null;
+    return `<div class="mc"><div class="h"><span>${name}</span><span class="pill ${d==null?'na':d>=0?'up':'down'}">${d==null?'—':(d>=0?'▲ ':'▼ ')+Math.abs(d).toFixed(1)+'%'}</span></div>
+      <div class="big">${fmt(c)}<span class="small"> 원</span></div><div class="small">전년 ${fmt(l)}원</div>
+      <div class="bars"><div class="bar ly"><span>${String(lp.start.getFullYear()).slice(2)}년</span><i style="width:${l/mx*100}%"></i><em>${short(l)}</em></div><div class="bar"><span>${String(S.period.start.getFullYear()).slice(2)}년</span><i style="width:${c/mx*100}%"></i><em>${short(c)}</em></div></div></div>`; };
+  const t = tableRows(C, X.days);
+  const cell = (v, isPct) => isPct ? `<td class="${v.startsWith('-')?'down':'up'}">${v}</td>` : `<td class="r">${fmt(v)}</td>`;
+  const row = (name, arr) => `<tr><td class="l">${name}</td>${arr.map(([a,b,p]) => cell(a)+cell(b)+(p?cell(p,true):'<td></td>')).join('')}</tr>`;
+  area.innerHTML = `
+    <div class="cmphead">
+      <div class="seg"><button data-m="same" class="${cmpMode==='same'?'on':''}">동일 매장 ${X.same.nCur}곳</button><button data-m="all" class="${cmpMode==='all'?'on':''}">운영 매장 ${X.all.nCur}/${X.all.nLy}</button></div>
+      <div class="p">${lab} vs 전년 ${yy(lp.start)}~${yy(lp.end)} · ${X.days}일</div>
+    </div>
+    ${warn.length||est||R.closed.length ? `<div class="note">${warn.length?`<b class="w">${warn.join(', ')}</b> · `:''}${est?'일부 매장은 월 합계를 날짜 비율로 나눈 추정값이에요 · ':''}${R.closed.length?`작년에만 있는 매장 ${R.closed.length}곳은 '운영 매장' 비교에만 들어가요`:''}</div>`:''}
+    <div class="mcards">${card('홀 매출','h')}${card('배달 매출','d')}${card('총매출 (홀+배달)','t')}</div>
+    <details class="more" open><summary>PPT에 들어갈 표 보기</summary>
+      <div style="overflow:auto"><table class="cmp"><thead><tr><th rowspan="2">내용</th><th colspan="3">홀</th><th colspan="3">배달</th><th colspan="3">홀+배달 (총매출)</th></tr><tr>${('<th>'+lab+'</th><th>전년 동기간</th><th>등락%</th>').repeat(3)}</tr></thead>
+      <tbody>${row('총 매출',t.total)}${row('평균 매출',t.avg)}${row('일평균 매출',t.daily)}</tbody></table></div>
+      <div class="extra">동일 매장 = 올해·작년 같은 기간에 모두 매출이 있는 매장 · 평균 = 합계 ÷ 매출이 있는 매장 수 · 일평균 = 평균 ÷ ${X.days}일</div>
+    </details>`;
+  area.querySelectorAll('[data-m]').forEach(b => b.addEventListener('click', () => { cmpMode = b.dataset.m; renderCompare(); }));
+}
+function showTab(t){ document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.tab===t)); ['cmp','match','opt'].forEach(p => $('p-'+p).classList.toggle('hidden', p!==t)); }
+
+/* ----- 엑셀 만들기 ----- */
+async function makeExcel(){
+  const T = await parseTemplate(S.buf.tpl.slice(0));
+  const hc = T.hallCol, dc = T.dlvCol, L = colStr;
+  const label = $('periodLabel').value.trim();
+  if (label){ setStr(T, L(hc)+T.hdrRow, label); setStr(T, L(dc)+T.hdrRow, label); }
+  const hasPrev = !!S.lyRes; let fixed = 0;
+  document.querySelectorAll('tr[data-i]').forEach(tr => {
+    const x = S.rows[+tr.dataset.i], v = readRow(tr), r = x.r;
+    setNum(T, L(hc)+r, v.hall); setNum(T, L(dc)+r, v.dlv);
+    if (hasPrev){ setNum(T, L(hc+1)+r, v.hallPrev); setNum(T, L(dc+1)+r, v.dlvPrev); }
+    if ($('fixFormula').checked){ for (const [act, tgt, rate] of [[hc, hc+3, hc+4],[dc, dc+3, dc+4]]){ const c = T.cells.get(L(rate)+r);
+      if (!c || !kids(c,'f').length){ setFormula(T, L(rate)+r, `${L(act)}${r}/${L(tgt)}${r}`); fixed++; } } }
+  });
+  recalc(T);
+  const zip = T.zip;
+  if (zip.file('xl/calcChain.xml')){ zip.remove('xl/calcChain.xml');
+    const ct = await zip.file('[Content_Types].xml').async('string'); zip.file('[Content_Types].xml', ct.replace(/<Override[^>]*calcChain[^>]*\/>/g,''));
+    const rl = await zip.file('xl/_rels/workbook.xml.rels').async('string'); zip.file('xl/_rels/workbook.xml.rels', rl.replace(/<Relationship[^>]*calcChain[^>]*\/>/g,'')); }
+  let wbx = await zip.file('xl/workbook.xml').async('string');
+  if (/<calcPr\b/.test(wbx)) wbx = wbx.replace(/<calcPr\b([^>]*?)(\/?)>/, (m,a,s) => `<calcPr${a.replace(/\s*fullCalcOnLoad="[^"]*"/,'')} fullCalcOnLoad="1"${s}>`);
+  else wbx = wbx.replace(/(<\/sheets>(?:\s*<definedNames>[\s\S]*?<\/definedNames>)?)/, '$1<calcPr fullCalcOnLoad="1"/>');
+  zip.file('xl/workbook.xml', wbx);
+  serializeSheet(T);
+  Object.keys(zip.files).forEach(k => { if (zip.files[k].dir) delete zip.files[k]; });
+  const out = await zip.generateAsync({type:'uint8array', compression:'DEFLATE', mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const p = S.period; let fname = '매장매출보고.xlsx';
+  if (p && p.start){ const ym = `${p.start.getFullYear()}-${String(p.start.getMonth()+1).padStart(2,'0')}`;
+    const full = p.end && p.start.getDate()===1 && p.end.getDate()===new Date(p.end.getFullYear(), p.end.getMonth()+1, 0).getDate();
+    fname = `매장매출보고_${ym}${full?'':'_'+String(p.start.getDate()).padStart(2,'0')+'-'+String(p.end.getDate()).padStart(2,'0')}.xlsx`; }
+  return {out, fname, fixed, hasPrev};
+}
+async function runBtn(btn, label, fn){
+  btn.disabled = true; const old = btn.innerHTML; btn.innerHTML = `<span class="spin"></span> 만드는 중…`;
+  try { await fn(); } catch(e){ console.error(e); toast('문제가 생겼어요: ' + esc(e.message||e), 'err'); }
+  finally { btn.innerHTML = old; btn.disabled = false; renderCompare(); }
+}
+$('genBtn').addEventListener('click', () => runBtn($('genBtn'), '엑셀', async () => {
+  const {out, fname, fixed, hasPrev} = await makeExcel(); window.__lastOutput = out;
+  if (!window.__noDownload) download(out, fname, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  const saved = await autoSaveCurrent();
+  toast(`<b>${esc(fname)}</b> 저장 완료<br>매장 ${S.rows.length}곳 홀·배달${hasPrev?' + 전년 동기간':''} 매출을 채웠어요${fixed?` · 달성률 수식 ${fixed}칸 복구`:''}${saved?'<br>이번 매출은 보관함에도 저장했어요.':''}`);
+}));
+$('pptBtn').addEventListener('click', () => runBtn($('pptBtn'), 'PPT', async () => {
+  const {out, fname, filled} = await makePpt(); window.__lastPpt = out;
+  if (!window.__noDownload) download(out, fname, 'application/vnd.openxmlformats-officedocument.presentationml.presentation');
+  const saved = await autoSaveCurrent();
+  toast(`<b>${esc(fname)}</b> 저장 완료<br>비교 슬라이드 ${filled}장과 표지 날짜를 바꿨어요${S.lyRes?'':' (전년 데이터 없음 → 0)'}${saved?'<br>이번 매출은 보관함에도 저장했어요.':''}`);
+}));
+
+/* ----- 이벤트 ----- */
+$('hero').addEventListener('click', () => $('heroInput').click());
+$('heroInput').addEventListener('change', e => { if (e.target.files.length) smartDrop([...e.target.files]); e.target.value=''; });
+document.querySelectorAll('.slot input').forEach(inp => inp.addEventListener('change', () => { if (inp.files[0]) loadMonthly(inp.dataset.k, inp.files[0]); inp.value=''; }));
+document.querySelectorAll('#prep .drop').forEach(d => { const inp = d.querySelector('input');
+  d.addEventListener('dragover', e => { e.preventDefault(); e.stopPropagation(); d.classList.add('over'); });
+  d.addEventListener('dragleave', () => d.classList.remove('over'));
+  d.addEventListener('drop', e => { e.preventDefault(); e.stopPropagation(); d.classList.remove('over'); if (e.dataTransfer.files.length) handlePrep(inp.dataset.k, [...e.dataTransfer.files]); });
+  inp.addEventListener('change', () => { if (inp.files.length) handlePrep(inp.dataset.k, [...inp.files]); inp.value=''; }); });
+// 화면 어디든 끌어다 놓기
+let dragN = 0;
+window.addEventListener('dragenter', e => { if ($('prep').open || !e.dataTransfer?.types?.includes('Files')) return; dragN++; $('overlay').classList.remove('hidden'); });
+window.addEventListener('dragleave', () => { if (--dragN <= 0){ dragN = 0; $('overlay').classList.add('hidden'); } });
+window.addEventListener('dragover', e => e.preventDefault());
+window.addEventListener('drop', e => { e.preventDefault(); dragN = 0; $('overlay').classList.add('hidden'); if ($('prep').open) return; if (e.dataTransfer.files.length) smartDrop([...e.dataTransfer.files]); });
+
+document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+$('q').addEventListener('input', applyFilter); $('onlyIssue').addEventListener('change', applyFilter);
+['chipLy','chipPpt','bannerBtn'].forEach(id => $(id).addEventListener('click', openPrep));
+$('prepClose').addEventListener('click', () => $('prep').close());
+$('prep').addEventListener('click', e => { if (e.target===$('prep')) $('prep').close(); });
+
 $('tplDl').addEventListener('click', e => { e.preventDefault();
   const ws = XLSX.utils.aoa_to_sheet([['시작일','종료일','매장명','홀매출','배달매출'],['2025-11-01','2025-11-30','구로디지털점',0,0],['2025-11-01','2025-11-01','청라점',0,0]]);
   ws['!cols'] = [{wch:12},{wch:12},{wch:20},{wch:14},{wch:14}];
@@ -894,7 +1133,7 @@ function saveOpt(){ localStorage.setItem(LS_OPT, JSON.stringify({hall:$('hallBas
 (async function init(){
   try { const o = JSON.parse(localStorage.getItem(LS_OPT)||'{}'); if (o.hall) $('hallBasis').value=o.hall; if (o.dlv) $('dlvBasis').value=o.dlv; if (o.fix===false) $('fixFormula').checked=false; if (o.save===false) $('saveCur').checked=false; } catch(e){}
   const t = new Date(); $('reportDate').value = `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
-  $('reportDate').addEventListener('change', () => {});
+  renderLY(); renderPpt(); build();
   try { S.ly = (await idb.get('lyDatasets')) || []; S.ppt = (await idb.get('pptTemplate')) || null; } catch(e){ console.warn(e); }
   renderLY(); renderPpt(); build();
 })();
