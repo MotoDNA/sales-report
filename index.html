@@ -102,6 +102,13 @@ select,input[type=text],textarea{border:1px solid var(--line);border-radius:10px
 .toast.on{opacity:1}
 .guide td{white-space:normal;vertical-align:top;line-height:1.55}
 .photo-prev{width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
+.lc-wrap{position:relative}
+.lc-tip{position:absolute;pointer-events:none;background:var(--ink);color:#fff;border-radius:10px;padding:8px 12px;font-size:12px;line-height:1.6;white-space:nowrap;opacity:0;transition:opacity .12s;z-index:5;box-shadow:0 6px 18px rgba(0,0,0,.18)}
+.lc-tip.on{opacity:1}
+.lc-tip b{font-size:14px}
+.lc-tip .lc-d{color:#FFD58A;font-weight:700}
+.lc-tip .lc-s{color:#cfc6bc}
+.lc-tip .up{color:#7BE3A6}.lc-tip .down{color:#FF9AA8}
 </style>
 </head>
 <body>
@@ -227,14 +234,28 @@ function barsH(items,{max,color='#C8102E',fmt=man}={}){max=max||Math.max(...item
    <div style="width:110px;font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i.l}</div>
    <div style="flex:1" class="bar"><i style="width:${Math.max(2,i.v/max*100)}%;background:${i.c||color}"></i></div>
    <div style="width:70px;text-align:right;font-size:12px" class="num">${fmt(i.v)}</div></div>`).join('')}
-function line(series,labels,{h=200,colors=['#C8102E','#B9B0A6']}={}){
+window._lc={};let LCID=0;
+function line(series,labels,{h=200,colors=['#C8102E','#B9B0A6'],tips,names=['일매출','전주 동기']}={}){
   const W=640,H=h,p=30;const all=series.flatMap(s=>s.data);const mx=Math.max(...all)*1.1,mn=0;
   const x=i=>p+i*(W-2*p)/(labels.length-1),y=v=>H-p-(v-mn)/(mx-mn)*(H-2*p);
+  const id='lc'+(LCID++);window._lc[id]={series:series.map(s=>s.data),tips:tips||labels,names,W,H,xs:labels.map((_,i)=>x(i)),ys:series[0].data.map(y)};
   let g='';for(let k=0;k<=4;k++){const yy=p+k*(H-2*p)/4;g+=`<line x1="${p}" x2="${W-p}" y1="${yy}" y2="${yy}" stroke="#f0e9df"/>`}
+  const guide=`<line class="lc-guide" x1="0" x2="0" y1="${p}" y2="${H-p}" stroke="#C8102E" stroke-opacity=".35" stroke-dasharray="3 3" style="visibility:hidden"/>`;
   const paths=series.map((s,si)=>`<path d="${s.data.map((v,i)=>(i?'L':'M')+x(i)+','+y(v)).join('')}" fill="none" stroke="${colors[si]}" stroke-width="${si?2:3}" ${si?'stroke-dasharray="5 4"':''}/>`+
-    (si?'':s.data.map((v,i)=>`<circle cx="${x(i)}" cy="${y(v)}" r="3.5" fill="#fff" stroke="${colors[0]}" stroke-width="2"><title>${labels[i]} ${man(v)}원</title></circle>`).join(''))).join('');
+    (si?'':s.data.map((v,i)=>`<circle class="lc-dot" data-i="${i}" cx="${x(i)}" cy="${y(v)}" r="3.5" fill="#fff" stroke="${colors[0]}" stroke-width="2"/>`).join(''))).join('');
   const lb=labels.map((l,i)=>`<text x="${x(i)}" y="${H-8}" font-size="11" text-anchor="middle" fill="#8A837C">${l}</text>`).join('');
-  return `<svg viewBox="0 0 ${W} ${H}" width="100%">${g}${paths}${lb}</svg>`}
+  const step=(W-2*p)/Math.max(1,labels.length-1);
+  const hits=labels.map((_,i)=>`<rect x="${x(i)-step/2}" y="0" width="${step}" height="${H}" fill="transparent" style="cursor:pointer" onmouseenter="lcTip('${id}',${i})" onclick="lcTip('${id}',${i})"/>`).join('');
+  return `<div class="lc-wrap" id="${id}" onmouseleave="lcHide('${id}')"><svg viewBox="0 0 ${W} ${H}" width="100%">${g}${guide}${paths}${lb}${hits}</svg><div class="lc-tip"></div></div>`}
+window.lcTip=(id,i)=>{const d=window._lc[id],w=document.getElementById(id);if(!d||!w)return;
+  const v=d.series[0][i],v2=d.series[1]?d.series[1][i]:null,tip=w.querySelector('.lc-tip');
+  tip.innerHTML=`<div class="lc-d">${d.tips[i]||''}</div><div>${d.names[0]} <b>${won(v)}원</b></div>`+(v2!=null?`<div class="lc-s">${d.names[1]} ${won(v2)}원 <span class="${v>=v2?'up':'down'}">${pct(v/v2-1)}</span></div>`:'');
+  const lx=d.xs[i]/d.W*100,ty=d.ys[i]/d.H*100;tip.style.left=lx+'%';tip.style.top=ty+'%';
+  tip.style.transform=`translate(${lx<15?'-10%':lx>85?'-90%':'-50%'},calc(-100% - 12px))`;tip.classList.add('on');
+  const gl=w.querySelector('.lc-guide');gl.setAttribute('x1',d.xs[i]);gl.setAttribute('x2',d.xs[i]);gl.style.visibility='visible';
+  w.querySelectorAll('.lc-dot').forEach(c=>{const on=+c.dataset.i===i;c.setAttribute('r',on?6:3.5);c.setAttribute('fill',on?'#C8102E':'#fff')})}
+window.lcHide=id=>{const w=document.getElementById(id);if(!w)return;w.querySelector('.lc-tip').classList.remove('on');w.querySelector('.lc-guide').style.visibility='hidden';
+  w.querySelectorAll('.lc-dot').forEach(c=>{c.setAttribute('r',3.5);c.setAttribute('fill','#fff')})}
 function donut(parts){let a=0;const r=60,c=2*Math.PI*r;
   const segs=parts.map(p=>{const s=`<circle r="${r}" cx="80" cy="80" fill="none" stroke="${p.c}" stroke-width="26" stroke-dasharray="${p.v*c} ${c}" stroke-dashoffset="${-a*c}" transform="rotate(-90 80 80)"/>`;a+=p.v;return s}).join('');
   return `<div style="display:flex;align-items:center;gap:20px"><svg width="160" height="160">${segs}</svg><div>${parts.map(p=>`<div style="margin:6px 0"><span class="badge" style="background:${p.c};color:#fff">${p.l}</span> <b>${(p.v*100).toFixed(1)}%</b></div>`).join('')}</div></div>`}
@@ -272,7 +293,7 @@ function viewHome(){
    <div class="card"><h3>📍 지역별 주간 증감</h3>${reg.map(x=>`<div class="row" style="margin:8px 0"><b style="width:50px">${x.r}</b><div class="sp bar"><i style="width:${Math.min(100,Math.abs(x.v)*400)}%;background:${x.v<0?'var(--red)':'var(--green)'}"></i></div><span class="${x.v<0?'down':'up'}" style="width:60px;text-align:right">${pct(x.v)}</span></div>`).join('')}</div>
   </div>
   <div class="card" style="margin-top:16px"><h3>전 가맹점 일매출 추이 <small>최근 14일 · 점선은 전주 동기</small></h3>
-   ${line([{data:stores[0].days.slice(14).map((_,i)=>sum(stores,s=>s.days[14+i].v))},{data:stores[0].days.slice(7,21).map((_,i)=>sum(stores,s=>s.days[7+i].v))}],stores[0].days.slice(14).map(x=>fmtD(x.d).replace(/\(.\)/,'')))}
+   ${line([{data:stores[0].days.slice(14).map((_,i)=>sum(stores,s=>s.days[14+i].v))},{data:stores[0].days.slice(7,21).map((_,i)=>sum(stores,s=>s.days[7+i].v))}],stores[0].days.slice(14).map(x=>fmtD(x.d).replace(/\(.\)/,'')),{tips:stores[0].days.slice(14).map(x=>fmtD(x.d))})}
   </div>`}
 window.copyReport=()=>{navigator.clipboard?.writeText('[구도로통닭 일일 리포트]\n'+window._reportText);toast('리포트 텍스트를 복사했어요')}
 
@@ -323,7 +344,7 @@ window.openStore=id=>{const s=stores.find(x=>x.id===id);
   <div>${riskBadges(s)}</div>
   <div class="grid g2" style="margin:14px 0"><div class="card kpi"><div class="lab">7일 일평균</div><div class="val" style="font-size:20px">${man(s.avg7)}원</div><span class="${s.avg7>=peerAvg?'up':'down'}">${pct(s.avg7/peerAvg-1)}</span> <span class="hint">${s.region} 평균 대비</span></div>
   <div class="card kpi"><div class="lab">전일 / 동요일 평균</div><div class="val" style="font-size:20px">${man(s.y)} / ${man(s.sameWd)}</div><span class="${s.vsWd<0?'down':'up'}">${pct(s.vsWd)}</span></div></div>
-  <div class="card"><h3>28일 매출 추이</h3>${line([{data:s.days.map(d=>d.v)}],s.days.map((d,i)=>i%4===3?fmtD(d.d).replace(/\(.\)/,''):''),{h:180})}</div>
+  <div class="card"><h3>28일 매출 추이</h3>${line([{data:s.days.map(d=>d.v)}],s.days.map((d,i)=>i%4===3?fmtD(d.d).replace(/\(.\)/,''):''),{h:180,tips:s.days.map(d=>fmtD(d.d)),names:['일매출']})}</div>
   <div class="card" style="margin-top:12px"><h3>채널 · 주류</h3>${donut([{l:'홀',v:s.hall,c:'#C8102E'},{l:'포장',v:s.take,c:'#E2A33B'},{l:'배달',v:s.deliv,c:'#4A443F'}])}<p class="hint">주류 비중 ${(s.alcohol*100).toFixed(1)}% (전체 평균 ${(sum(stores,x=>x.alcohol)/stores.length*100).toFixed(1)}%)</p></div>
   <div class="card" style="margin-top:12px"><h3>많이 팔린 메뉴 <small>7일</small></h3>${barsH(topM.map(m=>({l:m.n,v:m.qty})),{fmt:v=>v+'개'})}
   ${s.unreg?`<p style="margin-top:10px"><span class="badge b-gold">본사 미등록 옵션 판매</span> ${s.unreg}</p>`:''}</div>
