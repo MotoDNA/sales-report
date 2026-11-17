@@ -8,31 +8,33 @@
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <style>
-  :root{--bg:#f5f6f8;--card:#fff;--line:#e4e7ec;--text:#1d2330;--sub:#667085;--accent:#2f5d50;--accent2:#e8f0ed;--warn:#b54708;--warnbg:#fff6ed;--err:#b42318;--errbg:#fef3f2;--ok:#027a48;--okbg:#ecfdf3}
+  :root{--bg:#f5f6f8;--card:#fff;--line:#e4e7ec;--text:#1d2330;--sub:#667085;--accent:#2f5d50;--accent2:#e8f0ed;--warn:#b54708;--warnbg:#fff6ed;--err:#b42318;--errbg:#fef3f2;--ok:#027a48;--okbg:#ecfdf3;--up:#c4320a;--down:#175cd3}
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--text);font-family:Pretendard,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-size:15px;line-height:1.5}
-  .wrap{max-width:1080px;margin:0 auto;padding:32px 20px 80px}
+  .wrap{max-width:1120px;margin:0 auto;padding:32px 20px 80px}
   h1{font-size:24px;margin:0 0 4px}
   .lead{color:var(--sub);margin:0 0 28px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:18px}
-  .step{display:flex;align-items:center;gap:10px;margin:0 0 14px;font-size:17px;font-weight:700}
+  .card.prep{background:#fbfcfb;border-style:dashed}
+  .step{display:flex;align-items:center;gap:10px;margin:0 0 14px;font-size:17px;font-weight:700;flex-wrap:wrap}
   .step b{display:inline-flex;width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;font-size:14px;align-items:center;justify-content:center}
+  .step b.s{background:#98a2b3}
+  .step .h{font-weight:400;font-size:13px;color:var(--sub)}
   .drops{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-  @media(max-width:800px){.drops{grid-template-columns:1fr}}
-  .drop{border:1.5px dashed #cbd2dc;border-radius:12px;padding:16px;cursor:pointer;transition:.15s;background:#fafbfc;min-height:118px;display:flex;flex-direction:column;gap:4px}
+  .drops.two{grid-template-columns:repeat(2,1fr)}
+  @media(max-width:800px){.drops,.drops.two{grid-template-columns:1fr}}
+  .drop{border:1.5px dashed #cbd2dc;border-radius:12px;padding:16px;cursor:pointer;transition:.15s;background:#fafbfc;min-height:112px;display:flex;flex-direction:column;gap:4px}
   .drop:hover,.drop.over{border-color:var(--accent);background:var(--accent2)}
   .drop.done{border-style:solid;border-color:var(--accent);background:var(--accent2)}
   .drop .t{font-weight:700}
   .drop .d{color:var(--sub);font-size:13px}
   .drop .f{margin-top:auto;font-size:13px;color:var(--accent);font-weight:600;word-break:break-all}
   .drop input{display:none}
-  details{margin-top:14px}
-  summary{cursor:pointer;color:var(--sub);font-size:14px}
   .opts{display:grid;grid-template-columns:repeat(2,1fr);gap:14px 20px}
   @media(max-width:800px){.opts{grid-template-columns:1fr}}
   label.o{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:600}
   label.o small{font-weight:400;color:var(--sub)}
-  select,input[type=text]{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;width:100%}
+  select,input[type=text],input[type=date]{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;width:100%}
   textarea{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;width:100%;resize:vertical}
   .chk{display:flex;gap:8px;align-items:flex-start;font-size:14px}
   .chk small{display:block;color:var(--sub)}
@@ -44,48 +46,69 @@
   table{border-collapse:collapse;width:100%;font-size:14px}
   th,td{padding:7px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
   th{background:#f9fafb;position:sticky;top:0;z-index:1;text-align:left;font-weight:600;color:var(--sub)}
-  td.n input{text-align:right;width:130px}
-  td select{width:190px}
+  td.n input{text-align:right;width:124px}
+  td.n input.prev{background:#f9fafb;color:#475467}
+  td select{width:180px}
   .badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:12px;font-weight:600}
   .b-ok{background:var(--okbg);color:var(--ok)} .b-warn{background:var(--warnbg);color:var(--warn)} .b-err{background:var(--errbg);color:var(--err)}
   .sum{display:flex;gap:24px;flex-wrap:wrap;margin:14px 0 4px;font-size:14px;color:var(--sub)}
   .sum strong{color:var(--text);font-size:16px}
+  .btns{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
   .btn{font:inherit;font-weight:700;border:0;border-radius:10px;padding:13px 22px;background:var(--accent);color:#fff;cursor:pointer;font-size:16px}
   .btn:disabled{background:#c5ccd6;cursor:not-allowed}
-  .btn.ghost{background:#fff;color:var(--sub);border:1px solid var(--line);font-weight:500;font-size:13px;padding:7px 12px}
+  .btn.sec{background:#fff;color:var(--accent);border:1.5px solid var(--accent)}
+  .btn.sec:disabled{color:#98a2b3;border-color:#d0d5dd;background:#fff}
+  .btn.mini{font-weight:500;font-size:13px;padding:6px 12px;background:#fff;color:var(--sub);border:1px solid var(--line);border-radius:8px}
   .extra{font-size:13px;color:var(--sub);margin-top:10px}
-  .hidden{display:none}
+  .ds{width:100%;font-size:13px}
+  .ds td,.ds th{padding:6px 8px}
+  .cmp{border:1px solid #98a2b3;font-size:13px;margin-top:8px}
+  .cmp th,.cmp td{border:1px solid #d0d5dd;text-align:center;position:static;padding:6px 8px}
+  .cmp thead th{background:#f2f4f7;color:var(--text)}
+  .cmp td.l{background:#f2f4f7;font-weight:700}
+  .cmp td.r{text-align:right}
+  .up{color:var(--up);font-weight:700} .down{color:var(--down);font-weight:700}
+  .cmpTitle{font-weight:700;margin:16px 0 0}
   .foot{color:var(--sub);font-size:12px;text-align:center;margin-top:30px}
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>매장 매출 보고서 자동 취합</h1>
-  <p class="lead">파일 3개를 올리면 홀매출(POS)과 배달매출이 보고서 양식에 자동으로 채워져요. 모든 처리는 이 PC 브라우저 안에서만 이뤄지고, 파일이 외부로 전송되지 않아요.</p>
+  <p class="lead">파일 3개를 올리면 홀매출(POS)과 배달매출을 보고서 엑셀에 채우고, 전년 동기 비교 PPT까지 만들어요. 모든 처리는 이 PC 브라우저 안에서만 이뤄지고 파일이 외부로 나가지 않아요.</p>
+
+  <!-- 준비 -->
+  <div class="card prep">
+    <div class="step"><b class="s">0</b>처음 한 번만 준비 <span class="h">· 이 PC 브라우저에 저장돼서 다음 달부터는 건너뛰어도 돼요</span></div>
+    <div class="drops two">
+      <label class="drop" id="d-ly"><span class="t">작년 매출 데이터 보관함</span><span class="d">작년 POS 파일 · 배달 파일 · 작년 매출보고 엑셀 · 간단 양식 — 여러 개를 한 번에 올려도 돼요</span><span class="f" id="lyInfo"></span><input type="file" multiple accept=".xls,.xlsx,.csv,.txt,.json" data-k="ly"></label>
+      <label class="drop" id="d-ppt"><span class="t">PPT 보고서 양식</span><span class="d">'매출 보고' PPT (표지 + 동일 매장 / 운영 매장 비교 슬라이드)</span><span class="f" id="pptInfo"></span><input type="file" accept=".pptx" data-k="ppt"></label>
+    </div>
+    <div id="lyList"></div>
+    <div class="btns" style="margin-top:10px">
+      <button class="btn mini" id="tplDl">간단 양식(엑셀) 받기</button>
+      <button class="btn mini" id="lyExport">보관함 백업 내보내기</button>
+      <button class="btn mini" id="lyClear">보관함 비우기</button>
+    </div>
+    <div id="prepMsg"></div>
+  </div>
 
   <div class="card">
-    <div class="step"><b>1</b>파일 올리기</div>
+    <div class="step"><b>1</b>이번 달 파일 올리기</div>
     <div class="drops">
       <label class="drop" id="d-tpl"><span class="t">① 보고서 양식</span><span class="d">지난달 보고서 엑셀(.xlsx) 그대로</span><span class="f"></span><input type="file" accept=".xlsx" data-k="tpl"></label>
       <label class="drop" id="d-pos"><span class="t">② 홀매출 (POS)</span><span class="d">POS에서 받은 매장별 매출 (.xls / .xlsx / .csv)</span><span class="f"></span><input type="file" accept=".xls,.xlsx,.csv,.txt" data-k="pos"></label>
       <label class="drop" id="d-dlv"><span class="t">③ 배달매출</span><span class="d">매장별매출_일별_채널별 시트가 있는 엑셀 (.xlsx)</span><span class="f"></span><input type="file" accept=".xlsx,.xls" data-k="dlv"></label>
     </div>
-    <details>
-      <summary>(선택) 전년 동기간 파일도 있으면 함께 올리기 → '전년 동기간 매출' 칸까지 채워요</summary>
-      <div class="drops" style="margin-top:12px;grid-template-columns:repeat(2,1fr)">
-        <label class="drop" id="d-posPrev"><span class="t">전년 홀매출 (POS)</span><span class="d">작년 같은 기간 POS 파일</span><span class="f"></span><input type="file" accept=".xls,.xlsx,.csv,.txt" data-k="posPrev"></label>
-        <label class="drop" id="d-dlvPrev"><span class="t">전년 배달매출</span><span class="d">작년 같은 기간 배달 파일</span><span class="f"></span><input type="file" accept=".xlsx,.xls" data-k="dlvPrev"></label>
-      </div>
-    </details>
     <div id="loadMsg"></div>
   </div>
 
   <div class="card">
     <div class="step"><b>2</b>설정 확인</div>
     <div class="opts">
-      <label class="o">보고 기간 표시 (헤더 문구)
+      <label class="o">보고 기간 표시 (엑셀 헤더 문구)
         <textarea id="periodLabel" rows="2" placeholder="예: 10월&#10;261001~261031"></textarea>
-        <small>배달 파일의 기간에서 자동으로 만들어요. 필요하면 직접 고쳐도 돼요.</small>
+        <small>배달 파일의 기간에서 자동으로 만들어요. 전년 동기간은 같은 날짜의 작년 기간이에요.</small>
       </label>
       <div style="display:flex;flex-direction:column;gap:14px">
         <label class="o">홀매출 기준
@@ -93,7 +116,7 @@
             <option value="mp">매장판매 + 포장판매 (POS로 들어온 배달 제외) · 추천</option>
             <option value="net">실판매 금액 전체 (POS 배달 포함)</option>
           </select>
-          <small>배달앱 주문이 POS에도 '배달'로 잡히는 매장(구로디지털·청라·센트럴 등)은 '실판매 금액'을 쓰면 배달이 두 번 더해져요.</small>
+          <small>배달앱 주문이 POS에도 '배달'로 잡히는 매장은 '실판매 금액'을 쓰면 배달이 두 번 더해져요.</small>
         </label>
         <label class="o">배달매출 기준
           <select id="dlvBasis">
@@ -102,202 +125,338 @@
           </select>
         </label>
       </div>
-      <label class="chk"><input type="checkbox" id="fixFormula" checked><span>달성률 칸 수식 복구<small>숫자로 덮어써진 '매출달성율' 칸을 =실적/목표 수식으로 되돌려서, 새 매출이 들어가면 달성률도 같이 바뀌게 해요.</small></span></label>
+      <label class="o">PPT 보고일 (표지 날짜·주차)
+        <input type="date" id="reportDate">
+      </label>
+      <label class="chk"><input type="checkbox" id="fixFormula" checked><span>달성률 칸 수식 복구<small>숫자로 덮어써진 '매출달성율' 칸을 =실적/목표 수식으로 되돌려요.</small></span></label>
     </div>
   </div>
 
   <div class="card">
-    <div class="step"><b>3</b>매장별 매칭 확인 <span style="font-weight:400;font-size:13px;color:var(--sub)">· 매칭이 틀렸으면 고르면 되고, 다른 POS를 쓰는 매장은 금액을 직접 입력해도 돼요 (매칭은 다음 달에도 기억해요)</span></div>
+    <div class="step"><b>3</b>매장별 매칭 확인 <span class="h">· 매칭이 틀렸으면 고르고, 다른 POS를 쓰는 매장은 금액을 직접 입력해도 돼요 (매칭은 다음 달에도 기억해요)</span></div>
     <div id="tblArea"><div class="extra">파일 ①②③을 올리면 여기에 매장 목록이 나와요.</div></div>
   </div>
 
   <div class="card">
-    <div class="step"><b>4</b>보고서 만들기</div>
-    <button class="btn" id="genBtn" disabled>엑셀 보고서 다운로드</button>
+    <div class="step"><b>4</b>전년 동기 비교 미리보기</div>
+    <div id="cmpArea"><div class="extra">파일을 올리고 보관함에 작년 데이터가 있으면 여기에 비교표가 나와요.</div></div>
+  </div>
+
+  <div class="card">
+    <div class="step"><b>5</b>보고서 만들기</div>
+    <div class="btns">
+      <button class="btn" id="genBtn" disabled>엑셀 보고서 다운로드</button>
+      <button class="btn sec" id="pptBtn" disabled>PPT 동기 비교 보고서 다운로드</button>
+    </div>
+    <label class="chk" style="margin-top:14px"><input type="checkbox" id="saveCur" checked><span>이번 기간 매출도 보관함에 저장<small>내년에는 작년 데이터를 따로 올리지 않아도 바로 비교돼요.</small></span></label>
     <div id="genMsg"></div>
   </div>
-  <div class="foot">원본 양식의 서식·색상·조건부서식·필터는 그대로 두고, 숫자 칸만 바꿔요.</div>
+  <div class="foot">엑셀·PPT 양식의 서식과 디자인은 그대로 두고 숫자만 바꿔요.</div>
 </div>
 
 <script>
 'use strict';
-const S = { buf:{}, pos:null, dlv:null, posPrev:null, dlvPrev:null, tpl:null, rows:[] };
+const S = { buf:{}, pos:null, dlv:null, tpl:null, rows:[], ly:[], ppt:null, period:null };
 const LS_MAP = 'salesReport.map.v1', LS_OPT = 'salesReport.opt.v1';
 const $ = id => document.getElementById(id);
-const fmt = n => (n==null||n==='') ? '' : Math.round(n).toLocaleString('ko-KR');
+const fmt = n => (n==null||n==='' || !isFinite(n)) ? '' : Math.round(n).toLocaleString('ko-KR');
+const pct = (a,b) => (b ? ((a/b-1)*100).toFixed(1)+'%' : '');
 const num = v => { if (v==null || v==='') return 0; if (typeof v==='number') return v; const n = Number(String(v).replace(/["',\s원]/g,'')); return isFinite(n) ? n : 0; };
 const key = s => String(s ?? '').replace(/\s+/g,'');
 const norm = s => String(s||'').replace(/\(.*?\)/g,'').replace(/구도로통닭/g,'').replace(/\s+/g,'').replace(/점$/,'');
-const ALIAS = { '남광장':['남동탄','동탄남광장'] };
+const ALIAS = { '남광장':['남동탄','동탄남광장'], '남동탄':['남광장','동탄남광장'] };
 const loadMap = () => { try { return JSON.parse(localStorage.getItem(LS_MAP)||'{}'); } catch(e){ return {}; } };
 const saveMap = m => localStorage.setItem(LS_MAP, JSON.stringify(m));
-
+const SKIP = /^(합계|평균|소계|총계)$|row\(s\)/;
+const esc = s => String(s??'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function msg(el, type, html){ $(el).innerHTML = html ? `<div class="msg ${type}">${html}</div>` : ''; }
 
+/* ---------- 날짜 ---------- */
+const dayNum = d => Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 864e5);
+const fromDay = n => { const u = new Date(n*864e5); return new Date(u.getUTCFullYear(), u.getUTCMonth(), u.getUTCDate()); };
+const ymdDots = d => `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+const yy = d => `${String(d.getFullYear()).slice(2)}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+function toDate(v){
+  if (v==null||v==='') return null;
+  if (v instanceof Date) return new Date(v.getFullYear(), v.getMonth(), v.getDate());
+  if (typeof v==='number') return v>20000 && v<80000 ? fromDay(Math.round(v)-25569) : null;
+  const s = String(v);
+  let m = s.match(/(\d{4})[.\-\/년]\s*(\d{1,2})[.\-\/월]\s*(\d{1,2})/); if (m) return new Date(+m[1], +m[2]-1, +m[3]);
+  m = s.match(/^\s*(\d{2})(\d{2})(\d{2})\s*$/); if (m) return new Date(2000+ +m[1], +m[2]-1, +m[3]);
+  return null;
+}
+function toDateTime(v){ // 영업일 기준: 새벽 6시 이전 주문은 전날로
+  const d = toDate(v); if (!d) return null;
+  const m = String(v).match(/(\d{1,2}):(\d{2})/);
+  if (m && +m[1] < 6) d.setDate(d.getDate()-1);
+  return d;
+}
+function monthRange(v){ // '2025-11', '2025.11', '2025년 11월'
+  const m = String(v??'').match(/^\s*(\d{4})\s*[.\-\/년]\s*(\d{1,2})\s*월?\s*$/);
+  if (!m) return null;
+  return [new Date(+m[1], +m[2]-1, 1), new Date(+m[1], +m[2], 0)];
+}
+function lastYear(d){ const r = new Date(d.getFullYear()-1, d.getMonth(), d.getDate()); if (r.getMonth()!==d.getMonth()) r.setDate(0); return r; }
+function isoWeek(d){ const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); const day = t.getUTCDay()||7; t.setUTCDate(t.getUTCDate()+4-day); const y0 = new Date(Date.UTC(t.getUTCFullYear(),0,1)); return Math.ceil(((t-y0)/864e5+1)/7); }
+
+/* ---------- IndexedDB (보관함) ---------- */
+const idb = {
+  db:null,
+  open(){ if (this.db) return Promise.resolve(this.db); return new Promise((res,rej)=>{ const r = indexedDB.open('salesReport',1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => { this.db = r.result; res(this.db); }; r.onerror = () => rej(r.error); }); },
+  async get(k){ const db = await this.open(); return new Promise((res,rej)=>{ const q = db.transaction('kv').objectStore('kv').get(k); q.onsuccess=()=>res(q.result); q.onerror=()=>rej(q.error); }); },
+  async set(k,v){ const db = await this.open(); return new Promise((res,rej)=>{ const t = db.transaction('kv','readwrite'); t.objectStore('kv').put(v,k); t.oncomplete=()=>res(); t.onerror=()=>rej(t.error); }); }
+};
+
 /* ---------- 이름 매칭 ---------- */
-function bestMatch(name, list){
-  const rn = norm(name); const cands = [rn, ...(ALIAS[rn]||[])];
-  let best=null, bs=0, bd=1e9;
-  for (const s of list){
-    const sn = norm(s); let sc=0;
-    for (const c of cands){
-      if (!c || !sn) continue;
-      const m = Math.min(c.length, sn.length);
-      let v = 0;
-      if (sn===c) v=100;
-      else if (m>=2 && (sn.endsWith(c)||c.endsWith(sn))) v=80;
-      else if (m>=2 && (sn.includes(c)||c.includes(sn))) v=60;
-      sc = Math.max(sc, v);
-    }
-    const d = Math.abs(sn.length-rn.length);
-    if (sc>bs || (sc===bs && sc>0 && d<bd)){ best=s; bs=sc; bd=d; }
+function score(a, b){
+  const an = norm(a), bn = norm(b); let sc = 0;
+  for (const c of [an, ...(ALIAS[an]||[])]){
+    if (!c || !bn) continue; const m = Math.min(c.length, bn.length);
+    if (bn===c) sc = Math.max(sc,100);
+    else if (m>=2 && (bn.endsWith(c)||c.endsWith(bn))) sc = Math.max(sc,80);
+    else if (m>=2 && (bn.includes(c)||c.includes(bn))) sc = Math.max(sc,60);
   }
+  return sc;
+}
+function bestMatch(name, list){
+  let best=null, bs=0, bd=1e9; const rn = norm(name);
+  for (const s of list){ const sc = score(name, s), d = Math.abs(norm(s).length-rn.length);
+    if (sc>bs || (sc===bs && sc>0 && d<bd)){ best=s; bs=sc; bd=d; } }
   return bs>=60 ? best : null;
 }
 
-/* ---------- 파일 읽기 ---------- */
+/* ---------- 파일 → 시트 ---------- */
 function splitLine(line, delim){
   const out=[]; let cur='', q=false;
-  for (let i=0;i<line.length;i++){
-    const ch=line[i];
+  for (let i=0;i<line.length;i++){ const ch=line[i];
     if (q){ if (ch==='"'){ if (line[i+1]==='"'){cur+='"';i++;} else q=false; } else cur+=ch; }
-    else if (ch==='"') q=true;
-    else if (ch===delim){ out.push(cur); cur=''; }
-    else cur+=ch;
-  }
+    else if (ch==='"') q=true; else if (ch===delim){ out.push(cur); cur=''; } else cur+=ch; }
   out.push(cur); return out;
 }
-function sheetAoa(wb, pred){
-  for (const n of wb.SheetNames){
-    const aoa = XLSX.utils.sheet_to_json(wb.Sheets[n], {header:1, raw:true, defval:null});
-    for (let i=0;i<Math.min(aoa.length,30);i++){ if (pred((aoa[i]||[]).map(key))) return {aoa, hdr:i, name:n}; }
-  }
-  return null;
-}
-async function readAoa(file, pred){
+async function fileToSheets(file){
   const buf = new Uint8Array(await file.arrayBuffer());
   const zipOrOle = (buf[0]===0x50&&buf[1]===0x4B) || (buf[0]===0xD0&&buf[1]===0xCF);
-  if (zipOrOle) return sheetAoa(XLSX.read(buf,{type:'array'}), pred);
-  // POS에서 .xls로 내려주지만 실제로는 텍스트(탭 구분, EUC-KR)인 경우
+  const fromWb = wb => wb.SheetNames.map(n => ({name:n, aoa: XLSX.utils.sheet_to_json(wb.Sheets[n], {header:1, raw:true, defval:null})}));
+  if (zipOrOle) return fromWb(XLSX.read(buf, {type:'array', cellDates:true}));
   let txt = new TextDecoder('utf-8').decode(buf);
   if (txt.includes('\uFFFD')) txt = new TextDecoder('euc-kr').decode(buf);
-  if (/<table/i.test(txt)) return sheetAoa(XLSX.read(txt,{type:'string'}), pred);
-  const lines = txt.split(/\r?\n/);
-  const delim = lines[0].includes('\t') ? '\t' : ',';
-  const aoa = lines.map(l=>splitLine(l, delim));
-  for (let i=0;i<Math.min(aoa.length,30);i++){ if (pred(aoa[i].map(key))) return {aoa, hdr:i}; }
+  if (/<table/i.test(txt)) return fromWb(XLSX.read(txt, {type:'string', cellDates:true}));
+  const lines = txt.split(/\r?\n/); const delim = lines[0].includes('\t') ? '\t' : ',';
+  return [{name:file.name, aoa: lines.map(l => splitLine(l, delim))}];
+}
+function findHeader(sheets, pred){
+  for (const sh of sheets) for (let i=0;i<Math.min(sh.aoa.length,40);i++){ const r = (sh.aoa[i]||[]).map(key); if (pred(r)) return {aoa:sh.aoa, hdr:i, h:r, name:sh.name}; }
   return null;
 }
-function ymd(d){ return d ? `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}` : ''; }
-function toDate(v){
-  if (v==null||v==='') return null;
-  if (v instanceof Date) return v;
-  if (typeof v==='number') return new Date(Math.round((v-25569)*86400000));
-  const m = String(v).match(/(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})/);
-  return m ? new Date(+m[1], +m[2]-1, +m[3]) : null;
-}
 
-async function parsePOS(file){
-  const t = await readAoa(file, r => r.includes('매장명') && (r.includes('실판매금액')||r.includes('매장판매금액')));
-  if (!t) throw new Error('POS 파일에서 "매장명 / 실판매 금액" 머리글을 찾지 못했어요.');
-  const h = t.aoa[t.hdr].map(key); const col = n => h.indexOf(n);
+/* ---------- 원본 파일 해석 ---------- */
+function parsePOSSheets(sheets){
+  const t = findHeader(sheets, r => r.includes('매장명') && (r.includes('실판매금액')||r.includes('매장판매금액')));
+  if (!t) return null;
+  const col = n => t.h.indexOf(n);
   const c = { name:col('매장명'), net:col('실판매금액'), store:col('매장판매금액'), take:col('포장판매금액'), dlv:col('배달판매금액'), first:col('첫주문시간'), last:col('최종주문시간') };
   const stores = new Map(); let minD=null, maxD=null;
   for (let i=t.hdr+1;i<t.aoa.length;i++){
     const r = t.aoa[i]; if (!r) continue;
     const name = String(r[c.name]??'').trim();
     if (!name || /^(합계|평균|소계)$/.test(name) || /row\(s\)/.test(name)) continue;
-    const net = num(r[c.net]);
+    const net = c.net>=0 ? num(r[c.net]) : 0;
     const mp = c.store>=0 ? num(r[c.store]) + (c.take>=0 ? num(r[c.take]) : 0) : net;
-    const prev = stores.get(name) || {net:0, mp:0, posDlv:0};
-    stores.set(name, {net:prev.net+net, mp:prev.mp+mp, posDlv:prev.posDlv+(c.dlv>=0?num(r[c.dlv]):0)});
+    const p = stores.get(name) || {net:0, mp:0, posDlv:0};
+    stores.set(name, {net:p.net+(c.net>=0?net:mp), mp:p.mp+mp, posDlv:p.posDlv+(c.dlv>=0?num(r[c.dlv]):0)});
     const f = c.first>=0 ? toDate(r[c.first]) : null; if (f && (!minD||f<minD)) minD=f;
+    const l = c.last>=0 ? toDateTime(r[c.last]) : null; if (l && (!maxD||l>maxD)) maxD=l;
   }
-  return { stores, period: minD ? {start:minD} : null, hasMP: c.store>=0 };
+  return { stores, period: minD ? {start:minD, end:maxD||minD} : null };
 }
-
-async function parseDLV(file){
-  const t = await readAoa(file, r => r.includes('매장명') && r.includes('채널') && r.includes('매출'));
-  if (!t) throw new Error('배달 파일에서 "매장명 / 채널 / 매출" 머리글을 찾지 못했어요. (매장별매출_일별_채널별 시트가 필요해요)');
-  const h = t.aoa[t.hdr].map(key); const col = n => h.indexOf(n);
+function parseDLVSheets(sheets){
+  const t = findHeader(sheets, r => r.includes('매장명') && r.includes('채널') && r.includes('매출'));
+  if (!t) return null;
+  const col = n => t.h.indexOf(n);
   const c = { date:col('날짜'), name:col('매장명'), ch:col('채널'), amt:col('매출') };
   let period = null;
-  for (let i=0;i<t.hdr;i++){
-    const s = (t.aoa[i]||[]).join(' ');
-    const m = s.match(/시작일\s*([\d.\-\/]+)\s*~\s*종료일\s*([\d.\-\/]+)/);
-    if (m){ period = {start:toDate(m[1]), end:toDate(m[2])}; break; }
-  }
-  const stores = new Map(); let minD=null, maxD=null;
+  for (let i=0;i<t.hdr;i++){ const s = (t.aoa[i]||[]).join(' ');
+    const m = s.match(/시작일\s*([\d.\-\/]+)\s*~\s*종료일\s*([\d.\-\/]+)/); if (m){ period = {start:toDate(m[1]), end:toDate(m[2])}; break; } }
+  const stores = new Map(), daily = new Map(); let minD=null, maxD=null;
+  const APPS = ['배달의민족','배민1','쿠팡이츠','요기요','땡겨요'], BC = ['배달의민족','배민1','쿠팡이츠'];
   for (let i=t.hdr+1;i<t.aoa.length;i++){
     const r = t.aoa[i]; if (!r) continue;
     const name = String(r[c.name]??'').trim(); if (!name) continue;
-    const ch = String(r[c.ch]??'').replace(/^ㄴ\s*/,'').trim();
-    const v = num(r[c.amt]);
-    const s = stores.get(name) || {app:0, appParts:0, bc:0, hall:0};
-    if (ch==='배달앱(합계)') s.app += v;
-    else if (['배달의민족','배민1','쿠팡이츠','요기요','땡겨요'].includes(ch)) s.appParts += v;
-    if (['배달의민족','배민1','쿠팡이츠'].includes(ch)) s.bc += v;
+    const ch = String(r[c.ch]??'').replace(/^ㄴ\s*/,'').trim(); const v = num(r[c.amt]);
+    const d = c.date>=0 ? toDate(r[c.date]) : null;
+    const s = stores.get(name) || {app:0, parts:0, bc:0, hall:0};
+    if (!daily.has(name)) daily.set(name, new Map());
+    const dn = d ? dayNum(d) : null;
+    const dd = dn!=null ? (daily.get(name).get(dn) || {app:0, parts:0, bc:0}) : null;
+    if (ch==='배달앱(합계)'){ s.app += v; if (dd) dd.app += v; }
+    else if (APPS.includes(ch)){ s.parts += v; if (dd) dd.parts += v; }
+    if (BC.includes(ch)){ s.bc += v; if (dd) dd.bc += v; }
     if (ch==='홀주문(합계)') s.hall += v;
-    stores.set(name, s);
-    if (c.date>=0){ const d = toDate(r[c.date]); if (d){ if(!minD||d<minD)minD=d; if(!maxD||d>maxD)maxD=d; } }
+    stores.set(name, s); if (dd) daily.get(name).set(dn, dd);
+    if (d){ if(!minD||d<minD)minD=d; if(!maxD||d>maxD)maxD=d; }
   }
-  for (const s of stores.values()) if (!s.app && s.appParts) s.app = s.appParts;
+  for (const s of stores.values()) if (!s.app && s.parts) s.app = s.parts;
+  for (const m of daily.values()) for (const x of m.values()) if (!x.app && x.parts) x.app = x.parts;
   if (!period && minD) period = {start:minD, end:maxD};
-  return { stores, period };
+  return { stores, daily, period };
+}
+// 작년 매출보고 엑셀(이 보고서 양식) → 매장별 홀/배달
+function parseReportSheets(sheets){
+  for (const sh of sheets){
+    for (let i=1;i<Math.min(sh.aoa.length,40);i++){
+      const r = (sh.aoa[i]||[]).map(key); const nc = r.indexOf('매장명'); if (nc<0) continue;
+      const g = (sh.aoa[i-1]||[]).map(key); const hc = g.indexOf('홀'); const dc = g.findIndex(x => x.startsWith('배달'));
+      if (hc<0 || dc<0) continue;
+      const lab = String(sh.aoa[i][hc]??''); const m = lab.match(/(\d{6})\s*~\s*(\d{6})/);
+      const start = m ? toDate(m[1]) : null, end = m ? toDate(m[2]) : null;
+      const rows = [];
+      for (let j=i+1;j<sh.aoa.length;j++){ const rr = sh.aoa[j]||[]; const nm = String(rr[nc]??'').trim(); if (!nm) break; if (SKIP.test(nm)) continue;
+        const h = rr[hc], d = rr[dc]; if ((h==null||h==='') && (d==null||d==='')) continue;
+        rows.push({s:nm, h:num(h), d:num(d)}); }
+      return {start, end, rows, label:lab};
+    }
+  }
+  return null;
+}
+// 간단 양식: 시작일 | 종료일 | 매장명 | 홀매출 | 배달매출  (또는 날짜/월 한 칸)
+function parseSimpleSheets(sheets){
+  const t = findHeader(sheets, r => r.includes('매장명') && (r.includes('홀매출')||r.includes('배달매출')));
+  if (!t) return null;
+  const col = n => t.h.indexOf(n);
+  const c = { s:col('시작일'), e:col('종료일'), d:[col('날짜'),col('일자'),col('월'),col('기간')].find(x=>x>=0) ?? -1, name:col('매장명'), h:col('홀매출'), dl:col('배달매출') };
+  const rows = [];
+  for (let i=t.hdr+1;i<t.aoa.length;i++){
+    const r = t.aoa[i]; if (!r) continue; const nm = String(r[c.name]??'').trim(); if (!nm || SKIP.test(nm)) continue;
+    let a=null, b=null;
+    if (c.s>=0){ a = toDate(r[c.s]) || (monthRange(r[c.s])||[])[0]; b = c.e>=0 ? (toDate(r[c.e]) || (monthRange(r[c.e])||[])[1]) : null; if (a && !b) b = a; }
+    else if (c.d>=0){ const mr = monthRange(r[c.d]); if (mr){ [a,b] = mr; } else { a = b = toDate(r[c.d]); } }
+    if (!a || !b) continue;
+    rows.push({s:nm, a:dayNum(a), b:dayNum(b), h: c.h>=0 && r[c.h]!=null && r[c.h]!=='' ? num(r[c.h]) : undefined, d: c.dl>=0 && r[c.dl]!=null && r[c.dl]!=='' ? num(r[c.dl]) : undefined});
+  }
+  return rows.length ? rows : null;
 }
 
-/* ---------- 보고서 양식 (xlsx XML 직접 수정: 서식 100% 보존) ---------- */
+/* ---------- 보관함 데이터셋 ---------- */
+// row: {s, a, b, hm, hn, da, db}  (a,b = dayNum, hall mp/net, dlv app/bc)
+function dsFromPOS(p, name, auto){
+  const a = dayNum(p.period.start), b = dayNum(p.period.end);
+  return {id:crypto.randomUUID(), name, type:'POS 홀매출', auto:!!auto, a, b,
+    rows:[...p.stores].map(([s,v]) => ({s, a, b, hm:v.mp, hn:v.net}))};
+}
+function dsFromDLV(dv, name, auto){
+  const rows = [];
+  for (const [s,m] of dv.daily) for (const [dn,x] of m) rows.push({s, a:dn, b:dn, da:x.app, db:x.bc});
+  return {id:crypto.randomUUID(), name, type:'배달 매출(일별)', auto:!!auto, a:dayNum(dv.period.start), b:dayNum(dv.period.end), rows};
+}
+async function ingestLY(file){
+  if (/\.json$/i.test(file.name)){
+    const j = JSON.parse(await file.text()); const arr = Array.isArray(j) ? j : j.datasets;
+    if (!Array.isArray(arr)) throw new Error('백업 파일 형식이 아니에요.');
+    return arr.map(d => ({...d, id:crypto.randomUUID()}));
+  }
+  const sheets = await fileToSheets(file);
+  const rep = parseReportSheets(sheets);
+  if (rep){
+    if (!rep.start) throw new Error(`엑셀 헤더(${rep.label})에서 기간(예: 251101~251115)을 찾지 못했어요.`);
+    const a = dayNum(rep.start), b = dayNum(rep.end);
+    return [{id:crypto.randomUUID(), name:file.name, type:'매출보고 엑셀', a, b, rows: rep.rows.map(r => ({s:r.s, a, b, hm:r.h, hn:r.h, da:r.d, db:r.d}))}];
+  }
+  const pos = parsePOSSheets(sheets);
+  if (pos){
+    if (!pos.period){
+      const s = prompt(`${file.name}\n이 POS 파일의 기간을 입력해 주세요 (예: 2025-11-01~2025-11-30)`);
+      const m = String(s||'').match(/(\d{4}[.\-\/]\d{1,2}[.\-\/]\d{1,2})\s*~\s*(\d{4}[.\-\/]\d{1,2}[.\-\/]\d{1,2})/);
+      if (!m) throw new Error('기간을 알 수 없어서 건너뛰었어요.');
+      pos.period = {start:toDate(m[1]), end:toDate(m[2])};
+    }
+    return [dsFromPOS(pos, file.name)];
+  }
+  const dv = parseDLVSheets(sheets);
+  if (dv && dv.period) return [dsFromDLV(dv, file.name)];
+  const simple = parseSimpleSheets(sheets);
+  if (simple){
+    const a = Math.min(...simple.map(r=>r.a)), b = Math.max(...simple.map(r=>r.b));
+    return [{id:crypto.randomUUID(), name:file.name, type:'간단 양식', a, b, rows: simple.map(r => ({s:r.s, a:r.a, b:r.b, hm:r.h, hn:r.h, da:r.d, db:r.d}))}];
+  }
+  throw new Error('어떤 종류의 파일인지 알아보지 못했어요. (POS / 배달 / 매출보고 엑셀 / 간단 양식만 가능)');
+}
+async function saveLY(){ await idb.set('lyDatasets', S.ly); renderLY(); }
+function renderLY(){
+  const stores = new Set(); S.ly.forEach(d => d.rows.forEach(r => stores.add(r.s)));
+  $('lyInfo').textContent = S.ly.length ? `✓ ${S.ly.length}개 파일 저장됨` : '';
+  $('d-ly').classList.toggle('done', S.ly.length>0);
+  if (!S.ly.length){ $('lyList').innerHTML = ''; return; }
+  const list = [...S.ly].sort((x,y)=>x.a-y.a);
+  $('lyList').innerHTML = `<div class="tblwrap" style="margin-top:12px;max-height:240px"><table class="ds"><thead><tr><th>파일</th><th>종류</th><th>기간</th><th>매장 수</th><th></th></tr></thead><tbody>` +
+    list.map(d => `<tr><td>${esc(d.name)}${d.auto?' <span class="badge b-ok">자동 저장</span>':''}</td><td>${esc(d.type)}</td><td>${ymdDots(fromDay(d.a))} ~ ${ymdDots(fromDay(d.b))}</td><td>${new Set(d.rows.map(r=>r.s)).size}</td><td><button class="btn mini" data-del="${d.id}">삭제</button></td></tr>`).join('') +
+    `</tbody></table></div>`;
+  $('lyList').querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async () => { S.ly = S.ly.filter(d => d.id!==b.dataset.del); await saveLY(); build(); }));
+}
+
+/* 작년 동기간 값 계산: 일별 데이터 우선, 기간 데이터는 겹치는 날짜만큼 비례 계산 */
+function lyCompute(A, B){
+  const hb = $('hallBasis').value, db = $('dlvBasis').value;
+  const pick = { h: r => hb==='mp' ? (r.hm ?? r.hn) : (r.hn ?? r.hm), d: r => db==='app' ? (r.da ?? r.db) : (r.db ?? r.da) };
+  const by = new Map();
+  for (const ds of S.ly) for (const r of ds.rows){ if (r.a>B || r.b<A) continue; if (!by.has(r.s)) by.set(r.s, []); by.get(r.s).push(r); }
+  const out = new Map();
+  for (const [s, rows] of by){
+    const res = {};
+    for (const k of ['h','d']){
+      const cands = rows.filter(r => pick[k](r)!=null).sort((x,y)=>(x.b-x.a)-(y.b-y.a));
+      const cov = new Set(); let sum=0, est=false, any=false;
+      for (const r of cands){ let free=0; for (let d=Math.max(r.a,A); d<=Math.min(r.b,B); d++) if (!cov.has(d)){ cov.add(d); free++; }
+        if (!free) continue; const span = r.b-r.a+1; any = true; if (free<span) est = true; sum += pick[k](r)*free/span; }
+      res[k] = any ? {v:Math.round(sum), est} : null;
+    }
+    out.set(s, res);
+  }
+  // 기간 커버율
+  const cover = {};
+  for (const k of ['h','d']){ const days = new Set();
+    for (const ds of S.ly){ if (!ds.rows.some(r => pick[k](r)!=null)) continue; for (let d=Math.max(ds.a,A); d<=Math.min(ds.b,B); d++) days.add(d); }
+    cover[k] = days.size; }
+  return {stores: out, cover, total: B-A+1};
+}
+
+/* ---------- 보고서 엑셀 (xlsx XML 직접 수정) ---------- */
 const NS = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
 const colNum = s => { let n=0; for (const ch of s) n = n*26 + (ch.charCodeAt(0)-64); return n; };
 const colStr = n => { let s=''; while(n>0){ const m=(n-1)%26; s=String.fromCharCode(65+m)+s; n=Math.floor((n-1)/26); } return s; };
 const splitRef = ref => { const m = ref.match(/^([A-Z]+)(\d+)$/); return [m[1], +m[2]]; };
 const kids = (el, tag) => Array.from(el.childNodes).filter(n => n.nodeType===1 && n.localName===tag);
 
-async function parseTemplate(buf){
-  const zip = await JSZip.loadAsync(buf, {createFolders:false});
+async function loadSheet(zip, sheetPath){
   const P = new DOMParser();
-  const wbXml = await zip.file('xl/workbook.xml').async('string');
-  const relXml = await zip.file('xl/_rels/workbook.xml.rels').async('string');
-  const wbDoc = P.parseFromString(wbXml,'application/xml'), relDoc = P.parseFromString(relXml,'application/xml');
-  const firstSheet = wbDoc.getElementsByTagNameNS(NS,'sheet')[0];
-  const rid = firstSheet.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships','id');
-  let target = Array.from(relDoc.getElementsByTagName('Relationship')).find(r=>r.getAttribute('Id')===rid).getAttribute('Target');
-  const sheetPath = target.startsWith('/') ? target.slice(1) : 'xl/' + target.replace(/^\.\//,'');
   const doc = P.parseFromString(await zip.file(sheetPath).async('string'),'application/xml');
   let ss = [];
   if (zip.file('xl/sharedStrings.xml')){
     const sd = P.parseFromString(await zip.file('xl/sharedStrings.xml').async('string'),'application/xml');
-    ss = Array.from(sd.getElementsByTagNameNS(NS,'si')).map(si => {
-      let t=''; for (const ch of si.childNodes){ if (ch.localName==='t') t+=ch.textContent; else if (ch.localName==='r') kids(ch,'t').forEach(x=>t+=x.textContent); }
-      return t;
-    });
+    ss = Array.from(sd.getElementsByTagNameNS(NS,'si')).map(si => { let t=''; for (const ch of si.childNodes){ if (ch.localName==='t') t+=ch.textContent; else if (ch.localName==='r') kids(ch,'t').forEach(x=>t+=x.textContent); } return t; });
   }
   const sheetData = doc.getElementsByTagNameNS(NS,'sheetData')[0];
   const rowEls = new Map(), cells = new Map();
-  for (const row of kids(sheetData,'row')){
-    rowEls.set(+row.getAttribute('r'), row);
-    for (const c of kids(row,'c')) cells.set(c.getAttribute('r'), c);
-  }
-  const T = { zip, sheetPath, doc, ss, sheetData, rowEls, cells };
-  // 머리글 위치 찾기
+  for (const row of kids(sheetData,'row')){ rowEls.set(+row.getAttribute('r'), row); for (const c of kids(row,'c')) cells.set(c.getAttribute('r'), c); }
+  return { zip, sheetPath, doc, ss, sheetData, rowEls, cells };
+}
+async function parseTemplate(buf){
+  const zip = await JSZip.loadAsync(buf, {createFolders:false});
+  const P = new DOMParser();
+  const wbDoc = P.parseFromString(await zip.file('xl/workbook.xml').async('string'),'application/xml');
+  const relDoc = P.parseFromString(await zip.file('xl/_rels/workbook.xml.rels').async('string'),'application/xml');
+  const rid = wbDoc.getElementsByTagNameNS(NS,'sheet')[0].getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships','id');
+  const target = Array.from(relDoc.getElementsByTagName('Relationship')).find(r=>r.getAttribute('Id')===rid).getAttribute('Target');
+  const T = await loadSheet(zip, target.startsWith('/') ? target.slice(1) : 'xl/' + target.replace(/^\.\//,''));
   let hdrRow=null, nameCol=null;
-  for (const [ref,c] of cells){ if (key(cellText(T,c))==='매장명'){ const [cl,r]=splitRef(ref); hdrRow=r; nameCol=colNum(cl); break; } }
+  for (const [ref,c] of T.cells){ if (key(cellText(T,c))==='매장명'){ const [cl,r]=splitRef(ref); hdrRow=r; nameCol=colNum(cl); break; } }
   if (!hdrRow) throw new Error('보고서 양식에서 "매장명" 머리글을 찾지 못했어요.');
   let hallCol=null, dlvCol=null;
-  for (const [ref,c] of cells){
-    const [cl,r] = splitRef(ref); if (r!==hdrRow-1) continue;
-    const t = key(cellText(T,c));
-    if (t==='홀') hallCol = colNum(cl);
-    else if (t.startsWith('배달')) dlvCol = colNum(cl);
-  }
+  for (const [ref,c] of T.cells){ const [cl,r] = splitRef(ref); if (r!==hdrRow-1) continue; const t = key(cellText(T,c));
+    if (t==='홀') hallCol = colNum(cl); else if (t.startsWith('배달')) dlvCol = colNum(cl); }
   if (!hallCol || !dlvCol) throw new Error('보고서 양식에서 "홀" / "배달" 묶음 머리글을 찾지 못했어요.');
   const rows=[];
-  for (let r=hdrRow+1; ; r++){
-    const c = cells.get(colStr(nameCol)+r); const name = c ? cellText(T,c).trim() : '';
-    if (!name) break; rows.push({r, name});
-  }
-  Object.assign(T, {hdrRow, nameCol, hallCol, dlvCol, rows});
-  return T;
+  for (let r=hdrRow+1; ; r++){ const c = T.cells.get(colStr(nameCol)+r); const name = c ? cellText(T,c).trim() : ''; if (!name) break; rows.push({r, name}); }
+  return Object.assign(T, {hdrRow, nameCol, hallCol, dlvCol, rows});
 }
 function cellText(T, c){
   const t = c.getAttribute('t'); const v = kids(c,'v')[0];
@@ -309,61 +468,38 @@ function getCell(T, ref){
   if (T.cells.has(ref)) return T.cells.get(ref);
   const [cl, r] = splitRef(ref);
   let row = T.rowEls.get(r);
-  if (!row){
-    row = T.doc.createElementNS(NS,'row'); row.setAttribute('r', r);
+  if (!row){ row = T.doc.createElementNS(NS,'row'); row.setAttribute('r', r);
     const after = Array.from(T.rowEls.keys()).filter(k=>k>r).sort((a,b)=>a-b)[0];
-    T.sheetData.insertBefore(row, after ? T.rowEls.get(after) : null); T.rowEls.set(r,row);
-  }
+    T.sheetData.insertBefore(row, after ? T.rowEls.get(after) : null); T.rowEls.set(r,row); }
   const c = T.doc.createElementNS(NS,'c'); c.setAttribute('r', ref);
   const nx = kids(row,'c').find(x => colNum(splitRef(x.getAttribute('r'))[0]) > colNum(cl));
   row.insertBefore(c, nx||null); T.cells.set(ref,c); return c;
 }
 function clearCell(c){ for (const n of Array.from(c.childNodes)) c.removeChild(n); c.removeAttribute('t'); }
-function setNum(T, ref, n){
-  const c = getCell(T, ref); clearCell(c);
-  if (n!=null && n!=='' && isFinite(n)){ const v = T.doc.createElementNS(NS,'v'); v.textContent = String(n); c.appendChild(v); }
-}
-function setStr(T, ref, s){
-  const c = getCell(T, ref); clearCell(c); c.setAttribute('t','inlineStr');
+function setNum(T, ref, n){ const c = getCell(T, ref); clearCell(c); if (n!=null && n!=='' && isFinite(n)){ const v = T.doc.createElementNS(NS,'v'); v.textContent = String(n); c.appendChild(v); } }
+function setStr(T, ref, s){ const c = getCell(T, ref); clearCell(c); c.setAttribute('t','inlineStr');
   const is = T.doc.createElementNS(NS,'is'), t = T.doc.createElementNS(NS,'t');
-  t.setAttributeNS('http://www.w3.org/XML/1998/namespace','xml:space','preserve'); t.textContent = s; is.appendChild(t); c.appendChild(is);
-}
-function setFormula(T, ref, f){
-  const c = getCell(T, ref); clearCell(c);
-  const fe = T.doc.createElementNS(NS,'f'); fe.textContent = f; c.appendChild(fe);
-}
+  t.setAttributeNS('http://www.w3.org/XML/1998/namespace','xml:space','preserve'); t.textContent = s; is.appendChild(t); c.appendChild(is); }
+function setFormula(T, ref, f){ const c = getCell(T, ref); clearCell(c); const fe = T.doc.createElementNS(NS,'f'); fe.textContent = f; c.appendChild(fe); }
+function serializeSheet(T){ let xml = new XMLSerializer().serializeToString(T.doc); if (!xml.startsWith('<?xml')) xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' + xml; T.zip.file(T.sheetPath, xml); }
 
 /* 간단한 수식 계산기: 엑셀 '보호된 보기'에서도 올바른 숫자가 보이도록 캐시값 갱신 */
 function recalc(T){
   const masters = {};
-  for (const [ref,c] of T.cells){
-    const f = kids(c,'f')[0];
-    if (f && f.getAttribute('t')==='shared' && f.getAttribute('ref') && f.textContent){ const [cl,r]=splitRef(ref); masters[f.getAttribute('si')] = {text:f.textContent, col:colNum(cl), row:r}; }
-  }
+  for (const [ref,c] of T.cells){ const f = kids(c,'f')[0];
+    if (f && f.getAttribute('t')==='shared' && f.getAttribute('ref') && f.textContent){ const [cl,r]=splitRef(ref); masters[f.getAttribute('si')] = {text:f.textContent, col:colNum(cl), row:r}; } }
   const shift = (txt, dr, dc) => txt.replace(/(\$?)([A-Z]{1,3})(\$?)(\d+)/g, (m,a,cl,b,rw) => a + (a?cl:colStr(colNum(cl)+dc)) + b + (b?rw:(+rw+dr)));
-  const formulaOf = (ref, c) => {
-    const f = kids(c,'f')[0]; if (!f) return null;
-    if (f.getAttribute('t')==='shared' && !(f.getAttribute('ref') && f.textContent)){
-      const m = masters[f.getAttribute('si')]; if (!m) return undefined;
-      const [cl,r] = splitRef(ref); return shift(m.text, r-m.row, colNum(cl)-m.col);
-    }
-    if (f.getAttribute('t')==='array') return undefined;
-    return f.textContent;
-  };
+  const formulaOf = (ref, c) => { const f = kids(c,'f')[0]; if (!f) return null;
+    if (f.getAttribute('t')==='shared' && !(f.getAttribute('ref') && f.textContent)){ const m = masters[f.getAttribute('si')]; if (!m) return undefined; const [cl,r] = splitRef(ref); return shift(m.text, r-m.row, colNum(cl)-m.col); }
+    if (f.getAttribute('t')==='array') return undefined; return f.textContent; };
   const memo = new Map(), busy = new Set();
-  const ERR = /^#(REF!|DIV\/0!|VALUE!|N\/A|NAME\?|NUM!|NULL!)$/;
-  function val(ref){
-    ref = ref.replace(/\$/g,'');
-    if (memo.has(ref)) return memo.get(ref);
-    const c = T.cells.get(ref); if (!c) return null;
-    const f = formulaOf(ref, c);
-    let out;
+  function val(ref){ ref = ref.replace(/\$/g,''); if (memo.has(ref)) return memo.get(ref);
+    const c = T.cells.get(ref); if (!c) return null; const f = formulaOf(ref, c); let out;
     if (f===null){ const t=c.getAttribute('t'); const tx = cellText(T,c);
       if (t==='s'||t==='inlineStr'||t==='str') out = tx; else if (t==='e') out = {err:tx}; else out = tx==='' ? null : Number(tx); }
     else if (f===undefined) out = undefined;
     else { if (busy.has(ref)) return {err:'#REF!'}; busy.add(ref); try { out = evalF(f); } catch(e){ out = undefined; } busy.delete(ref); }
-    memo.set(ref, out); return out;
-  }
+    memo.set(ref, out); return out; }
   function evalF(src){
     const re = /\s*(?:(#REF!|#DIV\/0!|#VALUE!|#N\/A|#NAME\?)|(\$?[A-Z]{1,3}\$?\d+)|(\d+(?:\.\d+)?(?:[Ee][+-]?\d+)?)|([-+*/()]))/y;
     const toks=[]; let m; re.lastIndex=0;
@@ -371,57 +507,55 @@ function recalc(T){
       toks.push(m[1]?{e:m[1]}:m[2]?{r:m[2]}:m[3]?{n:+m[3]}:{o:m[4]}); }
     let i=0;
     const asNum = v => { if (v && v.err) return v; if (v==null||v==='') return v==='' ? {err:'#VALUE!'} : 0; if (typeof v==='number') return v; const n=Number(v); return isFinite(n)?n:{err:'#VALUE!'}; };
-    const bin = (a,b,op) => { a=asNum(a); b=asNum(b); if (a&&a.err) return a; if (b&&b.err) return b;
-      if (op==='+') return a+b; if (op==='-') return a-b; if (op==='*') return a*b; if (b===0) return {err:'#DIV/0!'}; return a/b; };
-    function prim(){ const t=toks[i++]; if (!t) throw new Error('eof');
-      if (t.n!==undefined) return t.n; if (t.e) return {err:t.e};
+    const bin = (a,b,op) => { a=asNum(a); b=asNum(b); if (a&&a.err) return a; if (b&&b.err) return b; if (op==='+') return a+b; if (op==='-') return a-b; if (op==='*') return a*b; if (b===0) return {err:'#DIV/0!'}; return a/b; };
+    function prim(){ const t=toks[i++]; if (!t) throw new Error('eof'); if (t.n!==undefined) return t.n; if (t.e) return {err:t.e};
       if (t.r){ const v = val(t.r); if (v===undefined) throw new Error('dep'); return v; }
-      if (t.o==='('){ const v=expr(); i++; return v; }
-      if (t.o==='-'){ const v=asNum(prim()); return v&&v.err?v:-v; }
-      if (t.o==='+') return prim();
-      throw new Error('bad'); }
+      if (t.o==='('){ const v=expr(); i++; return v; } if (t.o==='-'){ const v=asNum(prim()); return v&&v.err?v:-v; } if (t.o==='+') return prim(); throw new Error('bad'); }
     function term(){ let v=prim(); while (toks[i] && (toks[i].o==='*'||toks[i].o==='/')){ const op=toks[i++].o; v=bin(v,prim(),op); } return v; }
     function expr(){ let v=term(); while (toks[i] && (toks[i].o==='+'||toks[i].o==='-')){ const op=toks[i++].o; v=bin(v,term(),op); } return v; }
-    const v = expr(); if (i<toks.length) throw new Error('trailing');
-    return (v==null) ? 0 : v;
-  }
-  for (const [ref,c] of T.cells){
-    const f = kids(c,'f')[0]; if (!f) continue;
-    const v = val(ref); if (v===undefined) continue;
-    kids(c,'v').forEach(x=>c.removeChild(x));
-    const ve = T.doc.createElementNS(NS,'v');
-    if (v && v.err){ c.setAttribute('t','e'); ve.textContent = v.err; }
-    else if (typeof v==='number'){ c.removeAttribute('t'); ve.textContent = String(v); }
-    else { c.setAttribute('t','str'); ve.textContent = String(v??''); }
-    c.appendChild(ve);
-  }
+    const v = expr(); if (i<toks.length) throw new Error('trailing'); return (v==null) ? 0 : v; }
+  for (const [ref,c] of T.cells){ const f = kids(c,'f')[0]; if (!f) continue; const v = val(ref); if (v===undefined) continue;
+    kids(c,'v').forEach(x=>c.removeChild(x)); const ve = T.doc.createElementNS(NS,'v');
+    if (v && v.err){ c.setAttribute('t','e'); ve.textContent = v.err; } else if (typeof v==='number'){ c.removeAttribute('t'); ve.textContent = String(v); } else { c.setAttribute('t','str'); ve.textContent = String(v??''); }
+    c.appendChild(ve); }
 }
 
-/* ---------- 화면 ---------- */
+/* ---------- 화면: 파일 올리기 ---------- */
 document.querySelectorAll('.drop').forEach(d => {
   const inp = d.querySelector('input');
   d.addEventListener('dragover', e => { e.preventDefault(); d.classList.add('over'); });
   d.addEventListener('dragleave', () => d.classList.remove('over'));
-  d.addEventListener('drop', e => { e.preventDefault(); d.classList.remove('over'); if (e.dataTransfer.files[0]) handleFile(inp.dataset.k, e.dataTransfer.files[0]); });
-  inp.addEventListener('change', () => { if (inp.files[0]) handleFile(inp.dataset.k, inp.files[0]); });
+  d.addEventListener('drop', e => { e.preventDefault(); d.classList.remove('over'); if (e.dataTransfer.files.length) handleFiles(inp.dataset.k, [...e.dataTransfer.files]); });
+  inp.addEventListener('change', () => { if (inp.files.length) handleFiles(inp.dataset.k, [...inp.files]); inp.value=''; });
 });
-
-async function handleFile(k, file){
+async function handleFiles(k, files){
+  if (k==='ly'){
+    const ok=[], bad=[];
+    for (const f of files){ try { const ds = await ingestLY(f); S.ly.push(...ds); ok.push(f.name); } catch(e){ console.error(e); bad.push(`${esc(f.name)}: ${esc(e.message||e)}`); } }
+    await saveLY(); build();
+    msg('prepMsg', bad.length ? 'warn' : 'ok', (ok.length?`보관함에 ${ok.length}개 파일을 저장했어요.`:'') + (bad.length?`<br>못 읽은 파일 — ${bad.join('<br>')}`:''));
+    return;
+  }
+  const file = files[0];
+  if (k==='ppt'){
+    try { const buf = await file.arrayBuffer(); await JSZip.loadAsync(buf); S.ppt = {name:file.name, buf}; await idb.set('pptTemplate', S.ppt); renderPpt(); build(); msg('prepMsg','ok','PPT 양식을 저장했어요.'); }
+    catch(e){ msg('prepMsg','err', `PPT 양식을 읽지 못했어요: ${esc(e.message||e)}`); }
+    return;
+  }
   const d = $('d-'+k);
   try {
     msg('loadMsg','', '');
-    if (k==='tpl'){ S.buf.tpl = await file.arrayBuffer(); S.tpl = await parseTemplate(S.buf.tpl.slice(0)); S.tplName = file.name; }
-    else if (k==='pos'||k==='posPrev') S[k] = await parsePOS(file);
-    else S[k] = await parseDLV(file);
+    if (k==='tpl'){ S.buf.tpl = await file.arrayBuffer(); S.tpl = await parseTemplate(S.buf.tpl.slice(0)); }
+    else { const sheets = await fileToSheets(file);
+      if (k==='pos'){ S.pos = parsePOSSheets(sheets); if (!S.pos) throw new Error('POS 파일에서 "매장명 / 실판매 금액" 머리글을 찾지 못했어요.'); }
+      else { S.dlv = parseDLVSheets(sheets); if (!S.dlv) throw new Error('배달 파일에서 "매장명 / 채널 / 매출" 머리글을 찾지 못했어요. (매장별매출_일별_채널별 시트가 필요해요)'); } }
     d.classList.add('done'); d.querySelector('.f').textContent = '✓ ' + file.name;
     if (k==='dlv' || (k==='pos' && !S.dlv)) autoPeriod();
     build();
-  } catch(e){
-    console.error(e); d.classList.remove('done'); d.querySelector('.f').textContent = '';
-    msg('loadMsg','err', `<b>${file.name}</b>을(를) 읽지 못했어요. ${e.message||e}`);
-  }
+  } catch(e){ console.error(e); d.classList.remove('done'); d.querySelector('.f').textContent = '';
+    msg('loadMsg','err', `<b>${esc(file.name)}</b>을(를) 읽지 못했어요. ${esc(e.message||e)}`); }
 }
-
+function renderPpt(){ $('pptInfo').textContent = S.ppt ? '✓ ' + S.ppt.name : ''; $('d-ppt').classList.toggle('done', !!S.ppt); }
 function autoPeriod(){
   const p = (S.dlv && S.dlv.period) || (S.pos && S.pos.period); if (!p || !p.start) return;
   const s = p.start, e = p.end || new Date(s.getFullYear(), s.getMonth()+1, 0);
@@ -429,63 +563,84 @@ function autoPeriod(){
   $('periodLabel').value = `${s.getMonth()+1}월\n${y6(s)}~${y6(e)}`;
   S.period = {start:s, end:e};
 }
+function pickVal(src, which){ if (!src) return null; if (which==='pos') return $('hallBasis').value==='mp' ? src.mp : src.net; return $('dlvBasis').value==='bc' ? src.bc : src.app; }
 
-function pickVal(src, which){
-  if (!src) return null;
-  if (which==='pos') return $('hallBasis').value==='mp' ? src.mp : src.net;
-  return $('dlvBasis').value==='bc' ? src.bc : src.app;
+/* ---------- 매장 목록 + 작년 값 ---------- */
+function lyPeriod(){ if (!S.period) return null; const a = lastYear(S.period.start), b = lastYear(S.period.end); return {start:a, end:b, A:dayNum(a), B:dayNum(b)}; }
+function computeLY(){
+  const lp = lyPeriod(); if (!lp || !S.ly.length) return null;
+  const r = lyCompute(lp.A, lp.B); if (!r.cover.h && !r.cover.d) return null;
+  // 작년 매장명 → 이번 매장(보고서 행 / 기타 매장) 연결
+  const entries = currentEntries(false);
+  const names = []; const owner = new Map();
+  entries.forEach(e => e.names.forEach(n => { names.push(n); owner.set(n, e); }));
+  const ly = new Map(); entries.forEach(e => ly.set(e.key, {h:null, d:null, est:false}));
+  const closed = [];
+  for (const [s, v] of r.stores){
+    let m = bestMatch(s, names); if (m && score(s, m) < 80) m = null; let tgt;
+    if (m) tgt = ly.get(owner.get(m).key);
+    else { let g = closed.find(c => c.names.some(n => score(s,n)>=80)); if (!g){ g = {names:[], h:null, d:null, est:false}; closed.push(g); } g.names.push(s); tgt = g; }
+    for (const k of ['h','d']) if (v[k]){ tgt[k] = (tgt[k]||0) + v[k].v; if (v[k].est) tgt.est = true; }
+  }
+  return {lp, cover:r.cover, total:r.total, ly, closed: closed.filter(c => (c.h||0)+(c.d||0) > 0)};
+}
+function currentEntries(withValues=true){
+  const list = [];
+  const trs = [...document.querySelectorAll('tr[data-i]')];
+  S.rows.forEach((x, i) => {
+    const e = {key:'R:'+x.name, label:x.name, names:[x.name, x.pos, x.dlv].filter(Boolean), report:true, i};
+    if (withValues){ const v = readRow(trs[i]); Object.assign(e, {hall:v.hall||0, dlv:v.dlv||0, hallPrev:v.hallPrev, dlvPrev:v.dlvPrev}); }
+    list.push(e);
+  });
+  const usedP = new Set(S.rows.map(r=>r.pos)), usedD = new Set(S.rows.map(r=>r.dlv));
+  const extra = [];
+  const add = (n, kind) => { let e = extra.find(x => x.names.some(m => score(n,m)>=80));
+    if (!e){ e = {key:'X:'+n, label:n, names:[], report:false, hall:0, dlv:0}; extra.push(e); }
+    e.names.push(n);
+    if (kind==='pos') e.hall += pickVal(S.pos.stores.get(n),'pos')||0; else e.dlv += pickVal(S.dlv.stores.get(n),'dlv')||0; };
+  [...S.pos.stores.keys()].filter(n=>!usedP.has(n)).forEach(n => add(n,'pos'));
+  [...S.dlv.stores.keys()].filter(n=>!usedD.has(n)).forEach(n => add(n,'dlv'));
+  return list.concat(extra);
 }
 
 function build(){
   const area = $('tblArea');
-  if (!S.tpl || !S.pos || !S.dlv){ $('genBtn').disabled = true; return; }
+  if (!S.tpl || !S.pos || !S.dlv){ $('genBtn').disabled = true; $('pptBtn').disabled = true; return; }
   const map = loadMap();
   const posNames = [...S.pos.stores.keys()], dlvNames = [...S.dlv.stores.keys()];
-  const posPrevNames = S.posPrev ? [...S.posPrev.stores.keys()] : [], dlvPrevNames = S.dlvPrev ? [...S.dlvPrev.stores.keys()] : [];
-  S.rows = S.tpl.rows.map(({r,name}) => {
-    const ov = map[name] || {};
+  S.rows = S.tpl.rows.map(({r,name}) => { const ov = map[name] || {};
     const pos = ov.pos!==undefined ? (ov.pos==='' ? null : ov.pos) : bestMatch(name, posNames);
     const dlv = ov.dlv!==undefined ? (ov.dlv==='' ? null : ov.dlv) : bestMatch(name, dlvNames);
-    return { r, name, pos: posNames.includes(pos)?pos:null, dlv: dlvNames.includes(dlv)?dlv:null,
-      posPrev: S.posPrev ? bestMatch(pos||name, posPrevNames) || bestMatch(name, posPrevNames) : null,
-      dlvPrev: S.dlvPrev ? bestMatch(dlv||name, dlvPrevNames) || bestMatch(name, dlvPrevNames) : null };
-  });
-  const opt = (names, sel) => `<option value="">— 없음 —</option>` + names.map(n=>`<option ${n===sel?'selected':''}>${n}</option>`).join('');
-  let html = `<div class="tblwrap"><table><thead><tr><th>보고서 매장명</th><th>POS 매장</th><th style="text-align:right">홀매출</th><th>배달 매장</th><th style="text-align:right">배달매출</th>${S.posPrev||S.dlvPrev?'<th style="text-align:right">전년 홀</th><th style="text-align:right">전년 배달</th>':''}<th>상태</th></tr></thead><tbody>`;
-  S.rows.forEach((x,i) => {
-    html += `<tr data-i="${i}"><td><b>${x.name}</b></td>
-      <td><select data-f="pos">${opt(posNames,x.pos)}</select></td>
-      <td class="n"><input type="text" data-v="hall"></td>
-      <td><select data-f="dlv">${opt(dlvNames,x.dlv)}</select></td>
-      <td class="n"><input type="text" data-v="dlv"></td>
-      ${S.posPrev||S.dlvPrev?'<td class="n"><input type="text" data-v="hallPrev"></td><td class="n"><input type="text" data-v="dlvPrev"></td>':''}
-      <td data-st></td></tr>`;
-  });
+    return { r, name, pos: posNames.includes(pos)?pos:null, dlv: dlvNames.includes(dlv)?dlv:null }; });
+  const opt = (names, sel) => `<option value="">— 없음 —</option>` + names.map(n=>`<option ${n===sel?'selected':''}>${esc(n)}</option>`).join('');
+  let html = `<div class="tblwrap"><table><thead><tr><th>보고서 매장명</th><th>POS 매장</th><th style="text-align:right">홀매출</th><th>배달 매장</th><th style="text-align:right">배달매출</th><th style="text-align:right">전년 홀</th><th style="text-align:right">전년 배달</th><th>상태</th></tr></thead><tbody>`;
+  S.rows.forEach((x,i) => { html += `<tr data-i="${i}"><td><b>${esc(x.name)}</b></td>
+      <td><select data-f="pos">${opt(posNames,x.pos)}</select></td><td class="n"><input type="text" data-v="hall"></td>
+      <td><select data-f="dlv">${opt(dlvNames,x.dlv)}</select></td><td class="n"><input type="text" data-v="dlv"></td>
+      <td class="n"><input type="text" class="prev" data-v="hallPrev"></td><td class="n"><input type="text" class="prev" data-v="dlvPrev"></td><td data-st></td></tr>`; });
   html += `</tbody></table></div><div class="sum" id="sum"></div><div class="extra" id="extra"></div>`;
   area.innerHTML = html;
-  area.querySelectorAll('tr[data-i]').forEach(tr => {
-    const x = S.rows[+tr.dataset.i];
-    tr.querySelectorAll('select').forEach(sel => sel.addEventListener('change', () => {
-      x[sel.dataset.f] = sel.value || null;
-      const m = loadMap(); m[x.name] = m[x.name] || {}; m[x.name][sel.dataset.f] = sel.value; saveMap(m);
-      fillRow(tr, x, sel.dataset.f); refreshSummary();
-    }));
-    tr.querySelectorAll('input').forEach(inp => {
-      inp.addEventListener('change', () => { inp.value = inp.value.trim()==='' ? '' : fmt(num(inp.value)); refreshSummary(); });
-    });
-    fillRow(tr, x);
-  });
+  area.querySelectorAll('tr[data-i]').forEach(tr => { const x = S.rows[+tr.dataset.i];
+    tr.querySelectorAll('select').forEach(sel => sel.addEventListener('change', () => { x[sel.dataset.f] = sel.value || null;
+      const m = loadMap(); m[x.name] = m[x.name] || {}; m[x.name][sel.dataset.f] = sel.value; saveMap(m); fillRow(tr, x, sel.dataset.f); fillPrev(); refreshSummary(); }));
+    tr.querySelectorAll('input').forEach(inp => inp.addEventListener('change', () => { inp.value = inp.value.trim()==='' ? '' : fmt(num(inp.value)); refreshSummary(); }));
+    fillRow(tr, x); });
+  fillPrev();
   refreshSummary();
   $('genBtn').disabled = false;
 }
 function fillRow(tr, x, only){
-  const set = (k, v) => { tr.querySelector(`[data-v="${k}"]`) && (tr.querySelector(`[data-v="${k}"]`).value = v==null ? '' : fmt(v)); };
+  const set = (k, v) => { const el = tr.querySelector(`[data-v="${k}"]`); if (el) el.value = v==null ? '' : fmt(v); };
   if (!only || only==='pos') set('hall', x.pos ? pickVal(S.pos.stores.get(x.pos),'pos') : null);
   if (!only || only==='dlv') set('dlv', x.dlv ? pickVal(S.dlv.stores.get(x.dlv),'dlv') : null);
-  if (!only){
-    if (S.posPrev) set('hallPrev', x.posPrev ? pickVal(S.posPrev.stores.get(x.posPrev),'pos') : null);
-    if (S.dlvPrev) set('dlvPrev', x.dlvPrev ? pickVal(S.dlvPrev.stores.get(x.dlvPrev),'dlv') : null);
-  }
+}
+function fillPrev(){
+  S.lyRes = computeLY();
+  document.querySelectorAll('tr[data-i]').forEach(tr => { const x = S.rows[+tr.dataset.i];
+    const v = S.lyRes ? S.lyRes.ly.get('R:'+x.name) : null;
+    tr.querySelector('[data-v="hallPrev"]').value = v && v.h!=null ? fmt(v.h) : '';
+    tr.querySelector('[data-v="dlvPrev"]').value = v && v.d!=null ? fmt(v.d) : '';
+    tr.querySelector('[data-v="hallPrev"]').title = v && v.est ? '일부 기간을 날짜 비율로 추정한 값' : ''; });
 }
 function readRow(tr){
   const g = k => { const el = tr.querySelector(`[data-v="${k}"]`); if (!el || el.value.trim()==='') return null; return num(el.value); };
@@ -493,28 +648,185 @@ function readRow(tr){
 }
 function refreshSummary(){
   let th=0, td=0, miss=[];
-  document.querySelectorAll('tr[data-i]').forEach(tr => {
-    const x = S.rows[+tr.dataset.i], v = readRow(tr);
-    th += v.hall||0; td += v.dlv||0;
-    const st = tr.querySelector('[data-st]');
+  document.querySelectorAll('tr[data-i]').forEach(tr => { const x = S.rows[+tr.dataset.i], v = readRow(tr);
+    th += v.hall||0; td += v.dlv||0; const st = tr.querySelector('[data-st]');
     if (v.hall==null && v.dlv==null){ st.innerHTML = '<span class="badge b-err">데이터 없음</span>'; miss.push(x.name); }
     else if (v.hall==null) st.innerHTML = '<span class="badge b-warn">홀 없음</span>';
     else if (v.dlv==null) st.innerHTML = '<span class="badge b-warn">배달 없음</span>';
-    else st.innerHTML = '<span class="badge b-ok">OK</span>';
-  });
+    else st.innerHTML = '<span class="badge b-ok">OK</span>'; });
   const usedP = new Set(S.rows.map(r=>r.pos)), usedD = new Set(S.rows.map(r=>r.dlv));
   const leftP = [...S.pos.stores.keys()].filter(n=>!usedP.has(n)), leftD = [...S.dlv.stores.keys()].filter(n=>!usedD.has(n));
-  $('sum').innerHTML = `<span>매장 <strong>${S.rows.length}</strong>곳</span><span>홀 합계 <strong>${fmt(th)}</strong></span><span>배달 합계 <strong>${fmt(td)}</strong></span><span>총매출 <strong>${fmt(th+td)}</strong></span>`;
-  $('extra').innerHTML = (leftP.length?`· 보고서에 없는 POS 매장: ${leftP.join(', ')}<br>`:'') + (leftD.length?`· 보고서에 없는 배달 매장: ${leftD.join(', ')}`:'') +
-    (miss.length?`<br>· 데이터가 하나도 없는 매장(빈칸으로 남아요): ${miss.join(', ')}`:'');
+  $('sum').innerHTML = `<span>보고서 매장 <strong>${S.rows.length}</strong>곳</span><span>홀 합계 <strong>${fmt(th)}</strong></span><span>배달 합계 <strong>${fmt(td)}</strong></span><span>총매출 <strong>${fmt(th+td)}</strong></span>`;
+  $('extra').innerHTML = (leftP.length?`· 보고서에 없는 POS 매장 (PPT 비교에는 포함): ${esc(leftP.join(', '))}<br>`:'') + (leftD.length?`· 보고서에 없는 배달 매장 (PPT 비교에는 포함): ${esc(leftD.join(', '))}`:'') +
+    (miss.length?`<br>· 데이터가 하나도 없는 매장(빈칸으로 남아요): ${esc(miss.join(', '))}`:'');
+  renderCompare();
 }
 
-$('hallBasis').addEventListener('change', () => { saveOpt(); build(); });
-$('dlvBasis').addEventListener('change', () => { saveOpt(); build(); });
-$('fixFormula').addEventListener('change', saveOpt);
-function saveOpt(){ localStorage.setItem(LS_OPT, JSON.stringify({hall:$('hallBasis').value, dlv:$('dlvBasis').value, fix:$('fixFormula').checked})); }
-(function loadOpt(){ try { const o = JSON.parse(localStorage.getItem(LS_OPT)||'{}'); if (o.hall) $('hallBasis').value=o.hall; if (o.dlv) $('dlvBasis').value=o.dlv; if (o.fix===false) $('fixFormula').checked=false; } catch(e){} })();
+/* ---------- 전년 동기 비교 ---------- */
+function compare(){
+  if (!S.period || !S.rows.length) return null;
+  const R = S.lyRes; const days = dayNum(S.period.end) - dayNum(S.period.start) + 1;
+  const ents = currentEntries(true).map(e => {
+    let lh = null, ld = null;
+    if (e.report){ lh = e.hallPrev; ld = e.dlvPrev; }
+    else if (R){ const v = R.ly.get(e.key); if (v){ lh = v.h; ld = v.d; } }
+    return {label:e.label, ch:e.hall||0, cd:e.dlv||0, lh:lh||0, ld:ld||0};
+  });
+  if (R) R.closed.forEach(c => ents.push({label:c.names[0]+' (작년만)', ch:0, cd:0, lh:c.h||0, ld:c.d||0}));
+  const agg = (list, h, d) => { const o = {h:0,d:0,t:0,nH:0,nD:0,nT:0};
+    for (const e of list){ const a = e[h], b = e[d]; o.h += a; o.d += b; o.t += a+b; if (a>0) o.nH++; if (b>0) o.nD++; if (a+b>0) o.nT++; } return o; };
+  const curAll = ents.filter(e => e.ch+e.cd>0), lyAll = ents.filter(e => e.lh+e.ld>0);
+  const same = ents.filter(e => e.ch+e.cd>0 && e.lh+e.ld>0);
+  return { days, hasLY: !!R, R,
+    all: {cur:agg(curAll,'ch','cd'), ly:agg(lyAll,'lh','ld'), nCur:curAll.length, nLy:lyAll.length},
+    same:{cur:agg(same,'ch','cd'), ly:agg(same,'lh','ld'), nCur:same.length, nLy:same.length} };
+}
+function tableRows(C, days){
+  const avg = (s,n) => n ? s/n : 0;
+  const g = [['h','nH'],['d','nD'],['t','nT']];
+  return {
+    total: g.map(([k]) => [C.cur[k], C.ly[k], pct(C.cur[k], C.ly[k])]),
+    avg:   g.map(([k,n]) => [avg(C.cur[k],C.cur[n]), avg(C.ly[k],C.ly[n]), '']),
+    daily: g.map(([k,n]) => [avg(C.cur[k],C.cur[n])/days, avg(C.ly[k],C.ly[n])/days, ''])
+  };
+}
+function renderCompare(){
+  const X = compare(); const area = $('cmpArea');
+  $('pptBtn').disabled = !(X && S.ppt);
+  if (!X){ area.innerHTML = '<div class="extra">파일을 올리면 여기에 비교표가 나와요.</div>'; return; }
+  const lab = `${yy(S.period.start)}~${yy(S.period.end)}`; const lp = lyPeriod();
+  const cell = (v, isPct) => isPct ? `<td class="${v.startsWith('-')?'down':'up'}">${v}</td>` : `<td class="r">${fmt(v)}</td>`;
+  const tbl = (title, C) => { const t = tableRows(C, X.days);
+    const row = (name, arr) => `<tr><td class="l">${name}</td>${arr.map(([a,b,p]) => cell(a)+cell(b)+(p?cell(p,true):'<td></td>')).join('')}</tr>`;
+    return `<div class="cmpTitle">${title}</div><div style="overflow:auto"><table class="cmp"><thead><tr><th rowspan="2">내용</th><th colspan="3">홀</th><th colspan="3">배달</th><th colspan="3">홀+배달 (총매출)</th></tr><tr>${('<th>'+lab+'</th><th>전년 동기간 매출</th><th>등락%</th>').repeat(3)}</tr></thead><tbody>${row('총 매출',t.total)}${row('평균 매출',t.avg)}${row('일평균 매출',t.daily)}</tbody></table></div>`; };
+  let note = '';
+  if (!X.hasLY) note = `<div class="msg warn">보관함에 ${lp?ymdDots(lp.start)+' ~ '+ymdDots(lp.end):'작년 같은 기간'} 데이터가 없어서 전년 칸이 비어 있어요. 맨 위 '작년 매출 데이터 보관함'에 작년 파일을 올려 주세요.</div>`;
+  else { const R = X.R; const parts = [];
+    if (R.cover.h < R.total) parts.push(`홀: ${R.total}일 중 ${R.cover.h}일만 있음`);
+    if (R.cover.d < R.total) parts.push(`배달: ${R.total}일 중 ${R.cover.d}일만 있음`);
+    const est = [...R.ly.values()].some(v=>v.est);
+    note = `<div class="extra">전년 동기간: ${ymdDots(lp.start)} ~ ${ymdDots(lp.end)} (${X.days}일)${parts.length?` · <b style="color:var(--warn)">${parts.join(', ')}</b>`:''}${est?' · 일부 매장은 월 합계를 날짜 비율로 나눈 추정값':''}${R.closed.length?` · 작년에만 있는 매장 ${R.closed.length}곳(운영 매장 비교에만 포함)`:''}</div>`; }
+  area.innerHTML = note + tbl(`동기간 대비 매출 비교 (동일 매장 ${X.same.nCur}곳)`, X.same) + tbl(`동기간 대비 매출 비교 (동기간 운영 매장_${X.all.nCur}/${X.all.nLy})`, X.all) +
+    `<div class="extra">· 동일 매장 = 올해와 작년 같은 기간에 모두 매출이 있는 매장 · 평균 매출 = 합계 ÷ 매출이 있는 매장 수 · 일평균 = 평균 ÷ ${X.days}일${S.ppt?'':'<br>· PPT를 만들려면 맨 위에 PPT 보고서 양식을 한 번 올려 주세요.'}</div>`;
+}
 
+/* ---------- PPT 만들기 (양식 XML 직접 수정) ---------- */
+const A_NS='http://schemas.openxmlformats.org/drawingml/2006/main', P_NS='http://schemas.openxmlformats.org/presentationml/2006/main', C_NS='http://schemas.openxmlformats.org/drawingml/2006/chart', R_NS='http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+const qa = (el, ns, tag) => Array.from(el.getElementsByTagNameNS(ns, tag));
+const xmlOut = doc => { let s = new XMLSerializer().serializeToString(doc); if (!s.startsWith('<?xml')) s = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' + s; return s; };
+function setCellText(doc, tc, text){
+  const ps = qa(tc, A_NS, 'p'); let p = ps[0];
+  if (!p){ const body = qa(tc, A_NS, 'txBody')[0]; p = doc.createElementNS(A_NS,'a:p'); body.appendChild(p); }
+  ps.slice(1).forEach(x => x.parentNode.removeChild(x));
+  let runs = kids(p,'r');
+  if (!runs.length){ const r = doc.createElementNS(A_NS,'a:r'); const end = kids(p,'endParaRPr')[0];
+    const rpr = doc.createElementNS(A_NS,'a:rPr'); if (end) for (const at of Array.from(end.attributes)) rpr.setAttribute(at.name, at.value); if (end) Array.from(end.childNodes).forEach(n => rpr.appendChild(n.cloneNode(true)));
+    r.appendChild(rpr); const t = doc.createElementNS(A_NS,'a:t'); r.appendChild(t); p.insertBefore(r, end||null); runs = [r]; }
+  runs.slice(1).forEach(x => p.removeChild(x));
+  kids(runs[0],'t')[0].textContent = text;
+}
+function fillCmpTable(doc, tbl, C, days, lab){
+  const trs = kids(tbl,'tr'); const txt = tc => tc.textContent.replace(/\s+/g,'');
+  let gRow = -1, groups = null;
+  trs.forEach((tr, i) => { const tcs = kids(tr,'tc'); const t = tcs.map(txt);
+    const h = t.indexOf('홀'), d = t.findIndex(x => x.startsWith('배달')), s = t.findIndex(x => x.includes('총매출') || x.startsWith('홀+배달'));
+    if (gRow<0 && h>=0 && d>=0 && s>=0){ gRow = i; groups = [h,d,s]; } });
+  if (gRow<0) return false;
+  const T = tableRows(C, days);
+  const per = kids(trs[gRow+1],'tc'); groups.forEach(g => setCellText(doc, per[g], lab));
+  const map = {'총매출':T.total, '평균매출':T.avg, '일평균매출':T.daily};
+  trs.forEach(tr => { const tcs = kids(tr,'tc'); const k = txt(tcs[0]); const vals = map[k]; if (!vals) return;
+    groups.forEach((g, gi) => { const [a,b,p] = vals[gi]; setCellText(doc, tcs[g], fmt(a)); setCellText(doc, tcs[g+1], fmt(b)); if (k==='총매출') setCellText(doc, tcs[g+2], p); }); });
+  return true;
+}
+async function relTarget(zip, partPath, rid){
+  const dir = partPath.replace(/[^/]+$/,''), relPath = dir + '_rels/' + partPath.split('/').pop() + '.rels';
+  if (!zip.file(relPath)) return null;
+  const rd = new DOMParser().parseFromString(await zip.file(relPath).async('string'),'application/xml');
+  const rel = Array.from(rd.getElementsByTagName('Relationship')).find(r => r.getAttribute('Id')===rid); if (!rel) return null;
+  const parts = (dir + rel.getAttribute('Target')).split('/'); const out = [];
+  for (const p of parts){ if (p==='..') out.pop(); else if (p!=='.') out.push(p); } return out.join('/');
+}
+async function updateChart(zip, chartPath, C, labels){
+  const doc = new DOMParser().parseFromString(await zip.file(chartPath).async('string'),'application/xml');
+  const sers = qa(doc, C_NS, 'ser'); const updates = [];
+  for (const ser of sers){
+    const name = qa(ser, C_NS, 'tx')[0]?.textContent || '';
+    const k = name.includes('배달') ? 'd' : name.includes('홀') ? 'h' : null; if (!k) continue;
+    const cat = qa(ser, C_NS, 'cat')[0];
+    if (cat){ qa(cat, C_NS, 'pt').forEach((pt,i) => { if (labels[i]) qa(pt, C_NS, 'v')[0].textContent = labels[i]; });
+      const f = qa(cat, C_NS, 'f')[0]; if (f) updates.push({f:f.textContent, vals:labels}); }
+    const vals = [C.ly[k], C.cur[k]];
+    const val = qa(ser, C_NS, 'val')[0];
+    qa(val, C_NS, 'pt').forEach((pt,i) => { if (vals[i]!=null) qa(pt, C_NS, 'v')[0].textContent = String(Math.round(vals[i])); });
+    const f = qa(val, C_NS, 'f')[0]; if (f) updates.push({f:f.textContent, vals:vals.map(v=>Math.round(v))});
+  }
+  zip.file(chartPath, xmlOut(doc));
+  // 차트 안에 들어 있는 엑셀 데이터도 같이 갱신 (PPT에서 '데이터 편집' 해도 같은 숫자)
+  const ext = qa(doc, C_NS, 'externalData')[0];
+  const rid = ext && (ext.getAttributeNS(R_NS,'id') || ext.getAttribute('r:id'));
+  const emb = rid ? await relTarget(zip, chartPath, rid) : null;
+  if (emb && zip.file(emb) && /\.xlsx$/i.test(emb)){
+    try {
+      const ez = await JSZip.loadAsync(await zip.file(emb).async('uint8array'), {createFolders:false});
+      const T = await loadSheet(ez, 'xl/worksheets/sheet1.xml');
+      for (const u of updates){ const m = u.f.split('!').pop().match(/\$?([A-Z]+)\$?(\d+)(?::\$?([A-Z]+)\$?(\d+))?/); if (!m) continue;
+        const c1 = colNum(m[1]), r1 = +m[2], c2 = m[3] ? colNum(m[3]) : c1, r2 = m[4] ? +m[4] : r1;
+        let i = 0; for (let r=r1;r<=r2;r++) for (let c=c1;c<=c2;c++){ const v = u.vals[i++]; if (v==null) continue; typeof v==='number' ? setNum(T, colStr(c)+r, v) : setStr(T, colStr(c)+r, v); } }
+      serializeSheet(T);
+      Object.keys(ez.files).forEach(k => { if (ez.files[k].dir) delete ez.files[k]; });
+      zip.file(emb, await ez.generateAsync({type:'uint8array', compression:'DEFLATE'}));
+    } catch(e){ console.warn('embedded workbook skip', e); }
+  }
+}
+async function makePpt(){
+  const X = compare(); if (!X) throw new Error('비교할 데이터가 없어요.');
+  const zip = await JSZip.loadAsync(S.ppt.buf.slice(0), {createFolders:false});
+  const rd = $('reportDate').value ? new Date($('reportDate').value + 'T00:00:00') : new Date();
+  const wk = isoWeek(rd);
+  const cover = `${rd.getFullYear()}. ${rd.getMonth()+1}. ${rd.getDate()} (${wk}W)`;
+  const lab = `${yy(S.period.start)}~${yy(S.period.end)}`;
+  const labels = [`${String(lastYear(S.period.start).getFullYear()).slice(2)}년`, `${String(S.period.start.getFullYear()).slice(2)}년`];
+  const slides = Object.keys(zip.files).filter(n => /^ppt\/slides\/slide\d+\.xml$/.test(n));
+  let filled = 0;
+  for (const sp of slides){
+    const doc = new DOMParser().parseFromString(await zip.file(sp).async('string'),'application/xml');
+    let changed = false;
+    for (const p of qa(doc, A_NS, 'p')){ const runs = kids(p,'r'); const t = runs.map(r => kids(r,'t')[0]?.textContent||'').join('');
+      const m = t.match(/\d{4}\.\s*\d{1,2}\.\s*\d{1,2}\s*\(\s*\d+\s*W\s*\)/);
+      if (m && runs.length){ kids(runs[0],'t')[0].textContent = t.replace(m[0], cover); runs.slice(1).forEach(r => p.removeChild(r)); changed = true; } }
+    const tbls = qa(doc, A_NS, 'tbl');
+    const cmpTbl = tbls.find(t => t.textContent.includes('전년 동기간') && t.textContent.replace(/\s/g,'').includes('총매출'));
+    if (cmpTbl){
+      const all = tbls.map(t => t.textContent).join(' ');
+      const mode = /운영\s*매장/.test(all) ? 'all' : 'same'; const C = X[mode];
+      if (fillCmpTable(doc, cmpTbl, C, X.days, lab)) filled++;
+      for (const p of qa(doc, A_NS, 'p')){ const pt = p.textContent; if (!/동기간\s*대비/.test(pt)) continue;
+        for (const r of kids(p,'r')){ const t = kids(r,'t')[0]; if (t && /\d+\s*\/\s*\d+/.test(t.textContent) && mode==='all') t.textContent = t.textContent.replace(/\d+\s*\/\s*\d+/, `${X.all.nCur}/${X.all.nLy}`); } }
+      for (const ch of qa(doc, C_NS, 'chart')){ const rid = ch.getAttributeNS(R_NS,'id'); const cp = await relTarget(zip, sp, rid); if (cp && zip.file(cp)) await updateChart(zip, cp, C, labels); }
+      changed = true;
+    }
+    if (changed) zip.file(sp, xmlOut(doc));
+  }
+  if (!filled) throw new Error("PPT 양식에서 '전년 동기간 매출' 비교표를 찾지 못했어요.");
+  Object.keys(zip.files).forEach(k => { if (zip.files[k].dir) delete zip.files[k]; });
+  const out = await zip.generateAsync({type:'uint8array', compression:'DEFLATE', mimeType:'application/vnd.openxmlformats-officedocument.presentationml.presentation'});
+  const fname = `매출보고_${rd.getFullYear()}.${String(rd.getMonth()+1).padStart(2,'0')}.${String(rd.getDate()).padStart(2,'0')}(${wk}W).pptx`;
+  return {out, fname, filled};
+}
+
+/* ---------- 내려받기 ---------- */
+function download(bytes, name, type){ const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([bytes],{type})); a.download = name; document.body.appendChild(a); a.click(); a.remove(); }
+async function autoSaveCurrent(){
+  if (!$('saveCur').checked || !S.period) return 0;
+  const A = dayNum(S.period.start), B = dayNum(S.period.end);
+  const ym = `${S.period.start.getFullYear()}-${String(S.period.start.getMonth()+1).padStart(2,'0')}`;
+  const pos = S.pos.period ? S.pos : {...S.pos, period:S.period};
+  pos.period = {start:S.period.start, end:S.period.end};
+  const add = [dsFromPOS(pos, `${ym} POS (자동 저장)`, true), dsFromDLV(S.dlv, `${ym} 배달 (자동 저장)`, true)];
+  S.ly = S.ly.filter(d => !(d.auto && add.some(n => n.type===d.type && d.a>=A && d.b<=B)));
+  S.ly.push(...add); await saveLY(); return 1;
+}
 $('genBtn').addEventListener('click', async () => {
   try {
     $('genBtn').disabled = true; msg('genMsg','', '');
@@ -522,35 +834,24 @@ $('genBtn').addEventListener('click', async () => {
     const hc = T.hallCol, dc = T.dlvCol, L = colStr;
     const label = $('periodLabel').value.trim();
     if (label){ setStr(T, L(hc)+T.hdrRow, label); setStr(T, L(dc)+T.hdrRow, label); }
-    const hasPrev = !!(S.posPrev || S.dlvPrev);
-    let fixed = 0;
+    const hasPrev = !!S.lyRes; let fixed = 0;
     document.querySelectorAll('tr[data-i]').forEach(tr => {
       const x = S.rows[+tr.dataset.i], v = readRow(tr), r = x.r;
       setNum(T, L(hc)+r, v.hall); setNum(T, L(dc)+r, v.dlv);
-      if (S.posPrev) setNum(T, L(hc+1)+r, v.hallPrev);
-      if (S.dlvPrev) setNum(T, L(dc+1)+r, v.dlvPrev);
-      if ($('fixFormula').checked){
-        for (const [act, tgt, rate] of [[hc, hc+3, hc+4],[dc, dc+3, dc+4]]){
-          const c = T.cells.get(L(rate)+r);
-          if (!c || !kids(c,'f').length){ setFormula(T, L(rate)+r, `${L(act)}${r}/${L(tgt)}${r}`); fixed++; }
-        }
-      }
+      if (hasPrev){ setNum(T, L(hc+1)+r, v.hallPrev); setNum(T, L(dc+1)+r, v.dlvPrev); }
+      if ($('fixFormula').checked){ for (const [act, tgt, rate] of [[hc, hc+3, hc+4],[dc, dc+3, dc+4]]){ const c = T.cells.get(L(rate)+r);
+        if (!c || !kids(c,'f').length){ setFormula(T, L(rate)+r, `${L(act)}${r}/${L(tgt)}${r}`); fixed++; } } }
     });
     recalc(T);
-    // 계산 체인 제거 + 열 때 전체 재계산 (엑셀이 자동으로 다시 만들어요)
     const zip = T.zip;
-    if (zip.file('xl/calcChain.xml')){
-      zip.remove('xl/calcChain.xml');
-      let ct = await zip.file('[Content_Types].xml').async('string'); ct = ct.replace(/<Override[^>]*calcChain[^>]*\/>/g,''); zip.file('[Content_Types].xml', ct);
-      let rl = await zip.file('xl/_rels/workbook.xml.rels').async('string'); rl = rl.replace(/<Relationship[^>]*calcChain[^>]*\/>/g,''); zip.file('xl/_rels/workbook.xml.rels', rl);
-    }
+    if (zip.file('xl/calcChain.xml')){ zip.remove('xl/calcChain.xml');
+      let ct = await zip.file('[Content_Types].xml').async('string'); zip.file('[Content_Types].xml', ct.replace(/<Override[^>]*calcChain[^>]*\/>/g,''));
+      let rl = await zip.file('xl/_rels/workbook.xml.rels').async('string'); zip.file('xl/_rels/workbook.xml.rels', rl.replace(/<Relationship[^>]*calcChain[^>]*\/>/g,'')); }
     let wbx = await zip.file('xl/workbook.xml').async('string');
     if (/<calcPr\b/.test(wbx)) wbx = wbx.replace(/<calcPr\b([^>]*?)(\/?)>/, (m,a,s) => `<calcPr${a.replace(/\s*fullCalcOnLoad="[^"]*"/,'')} fullCalcOnLoad="1"${s}>`);
     else wbx = wbx.replace(/(<\/sheets>(?:\s*<definedNames>[\s\S]*?<\/definedNames>)?)/, '$1<calcPr fullCalcOnLoad="1"/>');
     zip.file('xl/workbook.xml', wbx);
-    let xml = new XMLSerializer().serializeToString(T.doc);
-    if (!xml.startsWith('<?xml')) xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' + xml;
-    zip.file(T.sheetPath, xml);
+    serializeSheet(T);
     Object.keys(zip.files).forEach(k => { if (zip.files[k].dir) delete zip.files[k]; });
     const out = await zip.generateAsync({type:'uint8array', compression:'DEFLATE', mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
     window.__lastOutput = out;
@@ -558,12 +859,45 @@ $('genBtn').addEventListener('click', async () => {
     if (p && p.start){ const ym = `${p.start.getFullYear()}-${String(p.start.getMonth()+1).padStart(2,'0')}`;
       const full = p.end && p.start.getDate()===1 && p.end.getDate()===new Date(p.end.getFullYear(), p.end.getMonth()+1, 0).getDate();
       fname = `매장매출보고_${ym}${full?'':'_'+String(p.start.getDate()).padStart(2,'0')+'-'+String(p.end.getDate()).padStart(2,'0')}.xlsx`; }
-    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([out],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
-    a.download = fname; document.body.appendChild(a); a.click(); a.remove();
-    msg('genMsg','ok', `<b>${fname}</b> 다운로드 완료! 매장 ${S.rows.length}곳의 홀·배달 매출을 채웠어요.${fixed?` (달성률 수식 ${fixed}칸 복구)`:''}${hasPrev?'':'<br>※ 전년 동기간 칸은 손대지 않았어요. 전년 파일을 올리면 같이 채워져요.'}`);
-  } catch(e){ console.error(e); msg('genMsg','err', '만드는 중 문제가 생겼어요: ' + (e.message||e)); }
+    if (!window.__noDownload) download(out, fname, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    const saved = await autoSaveCurrent();
+    msg('genMsg','ok', `<b>${esc(fname)}</b> 다운로드 완료! 매장 ${S.rows.length}곳의 홀·배달 매출을 채웠어요.${fixed?` (달성률 수식 ${fixed}칸 복구)`:''}${hasPrev?' 전년 동기간 칸도 보관함 데이터로 채웠어요.':'<br>※ 보관함에 작년 같은 기간 데이터가 없어 전년 동기간 칸은 손대지 않았어요.'}${saved?'<br>이번 기간 매출을 보관함에 저장했어요 (내년 비교용).':''}`);
+  } catch(e){ console.error(e); msg('genMsg','err', '만드는 중 문제가 생겼어요: ' + esc(e.message||e)); }
   finally { $('genBtn').disabled = false; }
 });
+$('pptBtn').addEventListener('click', async () => {
+  try {
+    $('pptBtn').disabled = true; msg('genMsg','', '');
+    const {out, fname, filled} = await makePpt(); window.__lastPpt = out;
+    if (!window.__noDownload) download(out, fname, 'application/vnd.openxmlformats-officedocument.presentationml.presentation');
+    const saved = await autoSaveCurrent();
+    msg('genMsg','ok', `<b>${esc(fname)}</b> 다운로드 완료! 비교 슬라이드 ${filled}장과 표지 날짜를 바꿨어요.${S.lyRes?'':'<br>※ 보관함에 작년 데이터가 없어 전년 칸은 0으로 들어갔어요.'}${saved?'<br>이번 기간 매출을 보관함에 저장했어요 (내년 비교용).':''}`);
+  } catch(e){ console.error(e); msg('genMsg','err', 'PPT를 만드는 중 문제가 생겼어요: ' + esc(e.message||e)); }
+  finally { renderCompare(); }
+});
+
+/* ---------- 보관함 버튼 ---------- */
+$('tplDl').addEventListener('click', e => { e.preventDefault();
+  const ws = XLSX.utils.aoa_to_sheet([['시작일','종료일','매장명','홀매출','배달매출'],['2025-11-01','2025-11-30','구로디지털점',0,0],['2025-11-01','2025-11-01','청라점',0,0]]);
+  ws['!cols'] = [{wch:12},{wch:12},{wch:20},{wch:14},{wch:14}];
+  const help = XLSX.utils.aoa_to_sheet([['작성 방법'],['· 한 줄 = 한 매장의 한 기간 매출이에요. 하루치면 시작일=종료일, 한 달치면 1일~말일로 적어요.'],['· 날짜 대신 "월" 열에 2025-11 처럼 적어도 돼요.'],['· 홀매출 또는 배달매출 중 하나만 있어도 돼요.'],['· 일별로 넣으면 15일치 같은 부분 기간도 정확하게 비교되고, 월 합계만 넣으면 날짜 비율로 추정해요.']]);
+  help['!cols'] = [{wch:90}];
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, '작년매출'); XLSX.utils.book_append_sheet(wb, help, '작성방법');
+  XLSX.writeFile(wb, '작년매출_간단양식.xlsx'); });
+$('lyExport').addEventListener('click', e => { e.preventDefault(); if (!S.ly.length){ msg('prepMsg','warn','보관함이 비어 있어요.'); return; }
+  download(JSON.stringify({version:1, datasets:S.ly}), `매출보관함_백업_${ymdDots(new Date())}.json`, 'application/json'); });
+$('lyClear').addEventListener('click', async e => { e.preventDefault(); if (!S.ly.length) return; if (!confirm('보관함의 매출 데이터를 모두 지울까요? (PPT 양식은 그대로 둬요)')) return; S.ly = []; await saveLY(); build(); });
+
+['hallBasis','dlvBasis'].forEach(id => $(id).addEventListener('change', () => { saveOpt(); build(); }));
+$('fixFormula').addEventListener('change', saveOpt); $('saveCur').addEventListener('change', saveOpt);
+function saveOpt(){ localStorage.setItem(LS_OPT, JSON.stringify({hall:$('hallBasis').value, dlv:$('dlvBasis').value, fix:$('fixFormula').checked, save:$('saveCur').checked})); }
+(async function init(){
+  try { const o = JSON.parse(localStorage.getItem(LS_OPT)||'{}'); if (o.hall) $('hallBasis').value=o.hall; if (o.dlv) $('dlvBasis').value=o.dlv; if (o.fix===false) $('fixFormula').checked=false; if (o.save===false) $('saveCur').checked=false; } catch(e){}
+  const t = new Date(); $('reportDate').value = `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
+  $('reportDate').addEventListener('change', () => {});
+  try { S.ly = (await idb.get('lyDatasets')) || []; S.ppt = (await idb.get('pptTemplate')) || null; } catch(e){ console.warn(e); }
+  renderLY(); renderPpt(); build();
+})();
 </script>
 </body>
 </html>
